@@ -1,0 +1,22 @@
+{
+  "name": "consultoria-sanchez",
+  "version": "1.0.0",
+  "description": "Sitio web y Aula Virtual - Consultoría Sánchez La Maná",
+  "main": "index.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^11.10.0",
+    "express": "^5.3.0",
+    "express-session": "^1.19.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

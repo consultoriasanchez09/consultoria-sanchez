@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: consultoria-sanchez
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: NODE_ENV
+        value: production
+      - key: HTTPS
+        value: "1"

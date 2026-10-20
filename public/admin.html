@@ -1,0 +1,33 @@
+<!doctype html><html lang="es-EC"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Administración | Consultoría Sánchez</title><link rel="icon" href="img/logo.png"><link rel="stylesheet" href="styles.css"></head>
+<body class="app"><div class="wrap" id="root"></div>
+<script src="common.js"></script><script>
+const root=document.getElementById('root');let courses=[],students=[];
+function loginView(msg){root.innerHTML=`<div class="panel"><h2 class="t">⚙️ Administración</h2><form id="lf"><label>Usuario<input id="u"></label><label>Contraseña<input id="p" type="password"></label><p id="le" class="err">${msg||''}</p><button class="btn btn-aula" style="width:100%">Ingresar</button></form></div>`;
+ lf.onsubmit=async e=>{e.preventDefault();try{const m=await api('/api/login',{body:{username:u.value,password:p.value}});if(m.role!='admin'){await api('/api/logout',{method:'POST'});return loginView('Esta cuenta no es administradora.')}init()}catch(x){le.textContent=x.message}}}
+const val=f=>Object.fromEntries(new FormData(f));
+async function load(){[courses,students]=await Promise.all([api('/api/admin/courses'),api('/api/admin/students')]);render()}
+function render(){const opts=courses.map(c=>`<option value="${c.id}">${esc(c.title)}</option>`).join('');
+ main.innerHTML=`
+ <h2 class="t">Cursos</h2><table class="t"><tr><th>ID</th><th>Curso</th><th>Área</th><th>Clases</th><th>Estudiantes</th><th></th></tr>
+ ${courses.map(c=>`<tr><td>${c.id}</td><td>${esc(c.title)}</td><td>${esc(c.area)}</td><td>${c.lessons}</td><td>${c.students}</td><td><button class="btn btn-sm btn-sec" onclick="showLessons(${c.id})">Clases</button> <button class="btn btn-sm danger" onclick="del('courses',${c.id})">Eliminar</button></td></tr>`).join('')}</table>
+ <div id="lessons"></div>
+ <h3>Nuevo curso</h3><form class="f" id="fc"><label>Título<input name="title" required></label><label>Área<select name="area"><option>Tributación</option><option>Contabilidad</option><option>Auditoría</option><option>Otro</option></select></label><label class="full">Descripción<textarea name="description"></textarea></label><div><button class="btn btn-aula">Crear curso</button></div></form>
+ <h3>Nueva clase</h3><form class="f" id="fl"><label>Curso<select name="course_id">${opts}</select></label><label>Título<input name="title" required></label><label>Enlace de video (YouTube, Vimeo, Drive)<input name="video_url" placeholder="https://..."></label><label>Enlace de material (PDF, Drive…)<input name="material_url" placeholder="https://..."></label><label>Orden<input name="position" type="number" value="1"></label><label class="full">Contenido<textarea name="content" rows="4"></textarea></label><div><button class="btn btn-aula">Agregar clase</button></div></form>
+ <hr><h2 class="t">Estudiantes</h2><table class="t"><tr><th>Nombre</th><th>Usuario</th><th>Código de acceso</th><th>Cursos</th><th></th></tr>
+ ${students.map(s=>`<tr><td>${esc(s.name)}<br><span class="small">${esc(s.email)}</span></td><td>${esc(s.username||'—')}</td><td><b>${esc(s.access_code||'—')}</b><br><button class="btn btn-sm btn-sec" onclick="gen(${s.id})">Generar código</button></td>
+ <td>${(s.courses||'').split(',').filter(Boolean).map(id=>{const c=courses.find(c=>c.id==id);return c?`<div>${esc(c.title)} <a href="#" onclick="unenroll(${s.id},${id});return false">✕</a></div>`:''}).join('')}</td>
+ <td><button class="btn btn-sm btn-sec" onclick="pw(${s.id})">Contraseña</button> <button class="btn btn-sm danger" onclick="del('students',${s.id})">Eliminar</button></td></tr>`).join('')}</table>
+ <h3>Nuevo estudiante</h3><form class="f" id="fs"><label>Nombre completo<input name="name" required></label><label>Correo<input name="email" type="email"></label><label>Usuario (opcional si usa código)<input name="username"></label><label>Contraseña (opcional)<input name="password" type="password"></label><div><button class="btn btn-aula">Crear estudiante</button></div></form>
+ <h3>Inscribir estudiante en curso</h3><form class="f" id="fe"><label>Estudiante<select name="user_id">${students.map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}</select></label><label>Curso<select name="course_id">${opts}</select></label><div><button class="btn btn-aula">Inscribir</button></div></form>
+ <hr><h3>Cambiar mi contraseña de administrador</h3><form class="f" id="fp"><label>Nueva contraseña (mín. 8)<input name="password" type="password" required minlength="8"></label><div><button class="btn btn-aula">Guardar</button></div></form>`;
+ const sub=(id,url,after)=>document.getElementById(id).onsubmit=async e=>{e.preventDefault();try{await api(url,{body:val(e.target)});after?after():load()}catch(x){alert(x.message)}};
+ sub('fc','/api/admin/courses');sub('fl','/api/admin/lessons');sub('fs','/api/admin/students');sub('fe','/api/admin/enroll');sub('fp','/api/admin/password',()=>alert('Contraseña actualizada'))}
+async function showLessons(id){const ls=await api(`/api/admin/courses/${id}/lessons`);lessons.innerHTML=`<h3>Clases de: ${esc(courses.find(c=>c.id==id).title)}</h3><table class="t">${ls.map(l=>`<tr><td>${l.position}</td><td>${esc(l.title)}</td><td class="small">${esc(l.video_url)}</td><td><button class="btn btn-sm danger" onclick="del('lessons',${l.id})">Eliminar</button></td></tr>`).join('')||'<tr><td>Sin clases</td></tr>'}</table>`}
+async function del(t,id){if(confirm('¿Eliminar definitivamente?')){await api(`/api/admin/${t}/${id}`,{method:'DELETE'});load()}}
+async function gen(id){const r=await api(`/api/admin/students/${id}/code`,{method:'POST'});alert('Nuevo código de acceso: '+r.code);load()}
+async function pw(id){const p=prompt('Nueva contraseña del estudiante:');if(p){await api(`/api/admin/students/${id}/password`,{body:{password:p}});alert('Actualizada')}}
+async function unenroll(u,c){await api('/api/admin/unenroll',{body:{user_id:u,course_id:c}});load()}
+async function init(){let me;try{me=await api('/api/me')}catch{return loginView()}if(me.role!='admin')return loginView('Inicie sesión como administrador.');
+ who.textContent=me.name;out.style.display='';root.innerHTML='<div class="layout"><aside class="side"><a class="on">📚 Cursos y estudiantes</a><a href="/aula">🎓 Ver Aula Virtual</a><a href="/">🏠 Sitio web</a></aside><div class="main" id="main"></div></div>';load()}
+init();
+</script></body></html>
