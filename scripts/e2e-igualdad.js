@@ -6,7 +6,7 @@ const path = require('path');
 const ExcelJS = require('exceljs');
 const content = require('../content');
 
-const PORT = 3456;
+const PORT = 3471;
 const BASE = 'http://127.0.0.1:' + PORT;
 const DB = '/tmp/ig-e2e-' + Date.now() + '.db';
 const PASSWORD = 'CambiarEsta2026!';
@@ -59,6 +59,8 @@ function client() {
   };
 }
 
+let log = '';
+let child;
 async function main() {
   for (const m of content.modules) {
     const words = m.reading.join(' ').split(/\s+/).filter(Boolean).length;
@@ -68,16 +70,16 @@ async function main() {
   check('total 40 h', content.TOTAL_HOURS === 40);
   check('prueba final 10', content.finalExam.questions.length === 10);
 
-  const child = spawn(process.execPath, ['server.js'], {
+  child = spawn(process.execPath, ['server.js'], {
     cwd: path.join(__dirname, '..'),
     env: { ...process.env, PORT: String(PORT), DB_PATH: DB, ADMIN_PASSWORD: PASSWORD, NODE_ENV: 'development' },
     stdio: ['ignore', 'pipe', 'pipe']
   });
-  let log = '';
   child.stdout.on('data', d => { log += d; });
   child.stderr.on('data', d => { log += d; });
   for (let i = 0; i < 50 && !log.includes('Consultoría Sánchez'); i++) await sleep(100);
   check('servidor arranca', log.includes('Consultoría Sánchez'), log.slice(-400));
+  if (child.exitCode != null) throw new Error('el servidor terminó al arrancar: ' + log.slice(-400));
 
   const admin = client();
   const badLogin = await admin('/api/login', { body: { username: 'admin', password: 'no' } });
@@ -118,23 +120,24 @@ async function main() {
   check('taller bloqueado antes de la lectura', early.status === 403);
 
   st = await pub('/api/igualdad/' + pedro.token + '/lectura/m1', { body: {} });
-  check('lectura queda por revisar', st.json.modules[0].lectura.status === 'pending' && st.json.hours.lecturas === 0);
+  check('lectura enviada acredita 3.5 h y abre el taller', st.json.modules[0].lectura.status === 'pending' && st.json.hours.lecturas === 3.5 && st.json.modules[0].taller.open && !st.json.modules[0].evaluacion.open, JSON.stringify({ h: st.json.hours, t: st.json.modules && st.json.modules[0].taller.open, e: st.json.modules && st.json.modules[0].evaluacion.open, err: st.text.slice(0, 240) }));
+  const evalEarly = await pub('/api/igualdad/' + pedro.token + '/evaluacion/m1', { body: { answers: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0] } });
+  check('evaluación cerrada hasta enviar el taller', evalEarly.status === 403);
   dash = await admin('/api/admin/igualdad/companies/' + companyId);
   check('cola de revisión', dash.json.queue.length === 1 && dash.json.kpi.porRevisar === 1);
   const subId = dash.json.queue[0].id;
   const rej = await admin('/api/admin/igualdad/submissions/' + subId + '/revisar', { body: { status: 'rejected' } });
   check('rechazo exige comentario', rej.status === 400);
-  const okRe = await admin('/api/admin/igualdad/submissions/' + subId + '/revisar', { body: { status: 'approved', comment: 'Lectura conforme' } });
-  check('aprueba lectura', okRe.status === 200);
+  const okRe = await admin('/api/admin/igualdad/submissions/' + subId + '/revisar', { body: { status: 'rejected', comment: 'Constancia: se revisa después, no bloquea.' } });
+  check('el rechazo queda en el registro', okRe.status === 200);
   st = await pub('/api/igualdad/' + pedro.token);
-  check('acredita 3.5 h de lectura', st.json.hours.lecturas === 3.5 && st.json.modules[0].taller.open);
+  check('el rechazo no cierra el taller ni quita las horas', st.json.modules[0].taller.open && st.json.hours.lecturas === 3.5 && st.json.modules[0].lectura.status === 'rejected');
+  st = await pub('/api/igualdad/' + pedro.token + '/lectura/m1', { body: {} });
+  check('puede reenviar la lectura', st.json.modules[0].lectura.status === 'pending');
 
   const taller = 'La oferta usa el cuidado como defecto y trata distinto a dos personas con familia. Hay que retirar la anotación, usar la misma banda y dejar una regla escrita de ofertas. ' + 'Aplico el caso a la bodega.';
   st = await pub('/api/igualdad/' + pedro.token + '/taller/m1', { body: { answer: taller } });
-  check('taller pendiente', st.json.modules[0].taller.status === 'pending');
-  dash = await admin('/api/admin/igualdad/companies/' + companyId);
-  const talId = dash.json.queue[0].id;
-  await admin('/api/admin/igualdad/submissions/' + talId + '/revisar', { body: { status: 'approved', comment: 'Bien' } });
+  check('taller enviado abre la evaluación sin revisión', st.status === 200 && st.json.modules[0].taller.status === 'pending' && st.json.modules[0].evaluacion.open && st.json.hours.tareas === 3, JSON.stringify(st.json.hours));
 
   const wrong = content.modules[0].questions.map(q => (q.answer + 1) % 4);
   st = await pub('/api/igualdad/' + pedro.token + '/evaluacion/m1', { body: { answers: wrong } });
@@ -276,4 +279,4 @@ async function main() {
   }
 }
 
-main().catch(err => { console.error(err); process.exit(1); });
+main().catch(err => { console.error(err); console.error(log.slice(-2000)); if (child) child.kill(); process.exit(1); });

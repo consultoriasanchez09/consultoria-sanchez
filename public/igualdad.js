@@ -33,7 +33,7 @@ function render() {
   root.innerHTML = `<div class="layout"><aside class="side"><p class="sec">${esc(state.company.razon_social)}</p><h3 style="margin:4px 10px">${esc(state.worker.nombre)}</h3><p class="small" style="margin:0 10px">${fmt(state.hours.total)} / ${state.totalHoras} h</p><div class="bar" style="margin:8px 10px"><i style="width:${state.hours.avance}%"></i></div>${mods}<a data-mod="final" class="${current === 'final' ? 'on' : ''} ${state.final.unlocked ? '' : 'lock'}">${state.final.unlocked ? '📝' : '🔒'} Prueba final · 6 h</a><a data-mod="cert" class="${current === 'cert' ? 'on' : ''}">🏅 Certificado</a></aside><div class="main" id="main"></div></div>`;
   root.querySelectorAll('[data-mod]').forEach(a => a.onclick = () => { current = a.dataset.mod; tab = current === 'final' ? 'final' : 'lectura'; render(); });
   const main = document.getElementById('main');
-  main.innerHTML = `<p class="banner-test">Versión de prueba. Las horas se acreditan cuando la lectura y el taller están aprobados y la evaluación está calificada con al menos ${state.pass} %.</p>` + body();
+  main.innerHTML = `<p class="banner-test">Versión de prueba. Las horas (lectura 3,5 h, taller 3 h, evaluación 2 h, prueba final 6 h, total 40 h) son la carga acreditada. No hay espera ni tiempo mínimo entre actividades.</p>` + body();
   bind(main);
 }
 
@@ -41,32 +41,33 @@ function body() {
   if (current === 'cert') return certHtml();
   if (current === 'final') return finalHtml();
   const m = state.modules.find(x => x.id === current);
-  if (!m.unlocked) return `<h2 class="t">${esc(m.title)}</h2><p>Este módulo se abre cuando el anterior tiene la lectura, el taller y la evaluación aprobados.</p>`;
+  if (!m.unlocked) return `<h2 class="t">${esc(m.title)}</h2><p>Este módulo se abre cuando aprueba la evaluación del módulo anterior.</p>`;
   const tabs = ['lectura', 'taller', 'evaluacion'].map(t => `<button type="button" data-tab="${t}" class="${tab === t ? 'on' : ''}">${t === 'lectura' ? 'Lectura · ' + fmt(m.hours.lectura) + ' h' : t === 'taller' ? 'Taller · ' + fmt(m.hours.taller) + ' h' : 'Evaluación · ' + fmt(m.hours.evaluacion) + ' h'}</button>`).join('');
   return `<h2 class="t">${esc(m.title)}</h2><div class="tabs">${tabs}</div>` + (tab === 'lectura' ? lecturaHtml(m) : tab === 'taller' ? tallerHtml(m) : evalHtml(m));
 }
 
 function lecturaHtml(m) {
   const s = m.lectura;
-  const done = s.status === 'approved' || s.status === 'pending';
-  return `<p><span class="pill">${esc(statusLabel(s.status))}</span> ${s.status === 'approved' ? 'Acredita ' + fmt(m.hours.lectura) + ' h.' : 'Acredita ' + fmt(m.hours.lectura) + ' h cuando se apruebe.'}</p>
+  const sent = s.status === 'approved' || s.status === 'pending';
+  return `<p><span class="pill">${esc(statusLabel(s.status))}</span> Carga acreditada: ${fmt(m.hours.lectura)} h.</p>
   ${s.comment ? `<p class="err">Comentario de revisión: ${esc(s.comment)}</p>` : ''}
   <div class="reading">${s.paragraphs.map(p => `<p>${esc(p)}</p>`).join('')}</div>${mats(s.materials)}
-  ${s.status === 'approved' ? '' : `<p><button class="btn btn-aula" id="sendLec">${done && s.status === 'pending' ? 'Lectura entregada' : 'Entregar lectura'}</button></p>`}`;
+  ${sent ? '<p class="small">Lectura completada. El taller de este módulo ya está disponible.</p>' : `<p><button class="btn btn-aula" id="sendLec">Lectura completada / Enviar lectura</button></p>`}`;
 }
 
 function tallerHtml(m) {
   const s = m.taller;
-  if (!s.open) return '<p>El taller se abre cuando la lectura está aprobada.</p>';
-  return `<h3>${esc(s.title)}</h3><p><span class="pill">${esc(statusLabel(s.status))}</span></p>
+  if (!s.open) return '<p>El taller se abre al completar la lectura de este módulo.</p>';
+  const sent = s.status === 'approved' || s.status === 'pending';
+  return `<h3>${esc(s.title)}</h3><p><span class="pill">${esc(statusLabel(s.status))}</span> Carga acreditada: ${fmt(m.hours.taller)} h.</p>
   ${s.comment ? `<p class="err">Comentario: ${esc(s.comment)}</p>` : ''}
   <div class="lesson"><p style="white-space:pre-line">${esc(s.prompt)}</p></div>${mats(s.materials)}
-  ${s.status === 'approved' ? `<p style="white-space:pre-line">${esc(s.answer)}</p>` : `<form id="taller"><textarea name="answer" rows="8" required minlength="120" placeholder="Escriba su análisis (mínimo 120 caracteres)">${esc(s.answer)}</textarea><p><button class="btn btn-aula">Entregar taller · ${fmt(m.hours.taller)} h</button></p></form>`}`;
+  ${sent ? `<p style="white-space:pre-line">${esc(s.answer)}</p><p class="small">Taller enviado. La evaluación de este módulo ya está disponible. La revisión, si la hay, queda como constancia.</p>` : `<form id="taller"><textarea name="answer" rows="8" required minlength="120" placeholder="Escriba su análisis (mínimo 120 caracteres)">${esc(s.answer)}</textarea><p><button class="btn btn-aula">Enviar taller</button></p></form>`}`;
 }
 
 function evalHtml(m) {
   const s = m.evaluacion;
-  if (!s.open) return '<p>La evaluación se abre cuando el taller está aprobado.</p>';
+  if (!s.open) return '<p>La evaluación se abre al enviar el taller de este módulo.</p>';
   const head = `<p><span class="pill">${esc(s.estado)}</span> Intentos: ${s.attempts}/${state.maxAttempts}${s.score != null ? ' · Mejor nota visible: ' + s.score + ' %' : ''}</p>${s.comment ? `<p class="small">Recálculo: ${esc(s.comment)}</p>` : ''}${mats(s.materials)}`;
   if (!s.canRetry) return head + reviewHtml(s.review);
   return head + `<form id="quiz">${s.questions.map((q, i) => `<div class="q"><b>${i + 1}. ${esc(q.q)}</b>${q.options.map((op, k) => `<label><input type="radio" name="q${i}" value="${k}" required> ${esc(op)}</label>`).join('')}</div>`).join('')}<button class="btn btn-aula">Enviar evaluación · ${fmt(m.hours.evaluacion)} h</button></form>` + reviewHtml(s.review);
@@ -74,7 +75,7 @@ function evalHtml(m) {
 
 function finalHtml() {
   const f = state.final;
-  if (!f.unlocked) return `<h2 class="t">Prueba final integradora</h2><p>Se abre cuando los cuatro módulos están completos: lectura, taller y evaluación aprobados.</p>`;
+  if (!f.unlocked) return `<h2 class="t">Prueba final integradora</h2><p>Se abre cuando aprueba la evaluación de los cuatro módulos. Acredita ${fmt(f.hours)} h si la aprueba.</p>`;
   const head = `<h2 class="t">${esc(f.title)} · ${fmt(f.hours)} h</h2><p>${esc(f.intro)}</p><p><span class="pill">${esc(f.estado)}</span> Intentos: ${f.attempts}/${state.maxAttempts}${f.score != null ? ' · Nota: ' + f.score + ' %' : ''}</p>${f.comment ? `<p class="small">Recálculo: ${esc(f.comment)}</p>` : ''}${mats(f.materials)}`;
   if (!f.canRetry) return head + reviewHtml(f.review);
   return head + `<form id="finalForm">${f.questions.map((q, i) => `<div class="q"><b>${i + 1}. ${esc(q.q)}</b>${q.options.map((op, k) => `<label><input type="radio" name="q${i}" value="${k}" required> ${esc(op)}</label>`).join('')}</div>`).join('')}<button class="btn btn-aula">Enviar prueba final</button></form>` + reviewHtml(f.review);
@@ -106,8 +107,7 @@ function answersFrom(form) {
 function bind(main) {
   main.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { tab = b.dataset.tab; render(); });
   const lec = main.querySelector('#sendLec');
-  if (lec && lec.textContent !== 'Lectura entregada') lec.onclick = () => act('lectura/' + current, {});
-  if (lec && lec.textContent === 'Lectura entregada') lec.disabled = true;
+  if (lec) lec.onclick = () => act('lectura/' + current, {});
   const taller = main.querySelector('#taller');
   if (taller) taller.onsubmit = e => { e.preventDefault(); act('taller/' + current, { answer: new FormData(taller).get('answer') }); };
   const quiz = main.querySelector('#quiz');
@@ -117,8 +117,12 @@ function bind(main) {
 }
 
 async function act(path, body) {
-  try { state = await api('/api/igualdad/' + token + '/' + path, { body }); render(); }
-  catch (e) { alert(e.message); }
+  try {
+    state = await api('/api/igualdad/' + token + '/' + path, { body });
+    if (path.startsWith('lectura/')) tab = 'taller';
+    if (path.startsWith('taller/')) tab = 'evaluacion';
+    render();
+  } catch (e) { alert(e.message); }
 }
 
 async function boot() {
