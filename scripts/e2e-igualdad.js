@@ -4,6 +4,7 @@ const { spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const ExcelJS = require('exceljs');
+const JSZip = require('jszip');
 const content = require('../content');
 
 const PORT = 3471;
@@ -90,7 +91,7 @@ async function main() {
   const badCo = await admin('/api/admin/igualdad/companies', { body: { razon_social: 'X', ruc: '123', representante_legal: 'Ana' } });
   check('RUC corto rechazado', badCo.status === 400);
 
-  const co = await admin('/api/admin/igualdad/companies', { body: { razon_social: 'Alimentos Andinos Cía. Ltda.', ruc: '1791234567001', representante_legal: 'María Elena Vásquez', auto_approve: false } });
+  const co = await admin('/api/admin/igualdad/companies', { body: { razon_social: 'Alimentos Andinos Cía. Ltda.', ruc: '1791234567001', representante_legal: 'María Elena Vásquez', direccion: 'Av. Amazonas N34-123 y República', ciudad: 'Quito', actividad: 'Elaboración de productos alimenticios', auto_approve: false } });
   check('crea empresa', co.status === 200 && co.json.id);
   const companyId = co.json.id;
 
@@ -107,6 +108,7 @@ async function main() {
   check('importa una fila y reporta la cédula mala', imp.status === 200 && imp.json.created === 1 && imp.json.errors.length === 1, JSON.stringify(imp.json));
 
   let dash = await admin('/api/admin/igualdad/companies/' + companyId);
+  check('sede y actividad', dash.json.company.ciudad === 'Quito' && dash.json.company.direccion.includes('Amazonas') && dash.json.company.actividad.includes('alimenticios'));
   check('kpi trabajadores 2', dash.json.kpi.trabajadores === 2);
   check('kpi directivos 0/1', dash.json.kpi.directivos === '0/1', dash.json.kpi.directivos);
   const pedro = dash.json.workers.find(x => x.cedula === '1710034065');
@@ -201,6 +203,58 @@ async function main() {
   check('acción art. 4', accion.status === 200);
   dash = await admin('/api/admin/igualdad/companies/' + companyId);
   check('directivo cumple 1/1 y kpi acción', dash.json.kpi.directivos === '1/1' && dash.json.kpi.cumplen === 1 && dash.json.kpi.acciones === 1, JSON.stringify(dash.json.kpi));
+
+  const banned = ['DAVID ABRAHAM YEPEZ CAYES', '1708200744001', 'CAMACHO MUNCHA', 'YEPEZ CHACHA', 'CHACHA ORDOÑEZ'];
+  const kitSrc = fs.readFileSync(path.join(__dirname, '..', 'templates', 'igualdad', 'copy.js'), 'utf8') + fs.readFileSync(path.join(__dirname, '..', 'lib', 'company-docs.js'), 'utf8');
+  check('las plantillas no traen datos de la empresa de ejemplo', banned.every(s => !kitSrc.includes(s)));
+  const anon = client();
+  check('documentos exigen sesión', (await anon('/api/admin/igualdad/companies/' + companyId + '/documentos/politica')).status === 401);
+  const poster = await admin('/api/admin/igualdad/companies/' + companyId + '/documentos/afiche-valor');
+  const posterText = decodePdfText(poster.buf);
+  check('afiche PDF con la empresa', poster.status === 200 && poster.buf.slice(0, 4).toString() === '%PDF' && posterText.includes('Alimentos Andinos') && posterText.includes('Quito') && posterText.includes('María Elena') && posterText.includes('IGUAL REMUNERACI') && banned.every(s => !posterText.includes(s)), posterText.slice(0, 240));
+  const denuncia = decodePdfText((await admin('/api/admin/igualdad/companies/' + companyId + '/documentos/afiche-denuncia')).buf);
+  const tolerancia = decodePdfText((await admin('/api/admin/igualdad/companies/' + companyId + '/documentos/afiche-tolerancia')).buf);
+  check('los tres afiches conservan su texto', denuncia.includes('CANAL CONFIDENCIAL') && denuncia.includes('Alimentos Andinos') && tolerancia.includes('TOLERANCIA CERO') && tolerancia.includes('Amazonas'));
+  async function docxText(url) {
+    const res = await admin(url);
+    const zip = await JSZip.loadAsync(res.buf);
+    const xml = await zip.file('word/document.xml').async('string');
+    return { status: res.status, xml: xml.replace(/<[^>]+>/g, '') };
+  }
+  const pol = await docxText('/api/admin/igualdad/companies/' + companyId + '/documentos/politica');
+  check('política DOCX personalizada', pol.status === 200 && pol.xml.includes('Alimentos Andinos') && pol.xml.includes('María Elena Vásquez') && pol.xml.includes('1791234567001') && pol.xml.includes('Quito') && pol.xml.includes('Artículo 1. Objeto') && pol.xml.includes('Elaboración de productos alimenticios') && banned.every(s => !pol.xml.includes(s)));
+  const acta = await docxText('/api/admin/igualdad/companies/' + companyId + '/documentos/acta');
+  check('acta con el personal y fecha en blanco', acta.xml.includes('Pedro Prueba') && acta.xml.includes('1710034065') && acta.xml.includes('Luis Pérez') && acta.xml.includes('____/____/________') && acta.xml.includes('Amazonas') && !acta.xml.includes('CAMACHO'));
+  const enc = await docxText('/api/admin/igualdad/companies/' + companyId + '/documentos/encuesta');
+  check('encuesta anónima de la empresa', enc.xml.includes('En esta empresa, hombres y mujeres reciben igual remuneración') && enc.xml.includes('Alimentos Andinos') && enc.xml.includes('Quito') && !enc.xml.includes('Pedro Prueba'));
+  const ins = await docxText('/api/admin/igualdad/companies/' + companyId + '/documentos/instructivo');
+  check('instructivo Art. 4 identificado', ins.xml.includes('Imprimir y firmar la Política') && ins.xml.includes('1791234567001') && ins.xml.includes('Elaboración de productos alimenticios'));
+  const rep = await admin('/api/admin/igualdad/companies/' + companyId + '/documentos/reporte');
+  const kitWb = new ExcelJS.Workbook();
+  await kitWb.xlsx.load(rep.buf);
+  check('reporte con las 4 hojas del modelo', kitWb.worksheets.map(s => s.name).join('|') === 'Consolidado|Bitácora videos|Tareas y evaluaciones|Sensibilización (Art. 4)');
+  const cons = kitWb.getWorksheet('Consolidado');
+  check('encabezado del consolidado', cons.getRow(1).getCell(1).text.includes('MDT-2025-006') && cons.getRow(2).getCell(2).text.includes('Alimentos Andinos') && cons.getRow(2).getCell(4).text === '1791234567001' && cons.getRow(2).getCell(6).text === '2026' && cons.getRow(3).getCell(2).text === 'Quito' && cons.getRow(4).getCell(5).text === 'Horas video');
+  const pedroRow = cons.getRow(6);
+  check('Pedro acredita 40 h en el consolidado', pedroRow.getCell(1).text.includes('Pedro') && pedroRow.getCell(4).text === 'SÍ' && pedroRow.getCell(5).value === 14 && pedroRow.getCell(6).value === 12 && pedroRow.getCell(7).value === 40 && pedroRow.getCell(9).text === 'SÍ', JSON.stringify([pedroRow.getCell(5).value, pedroRow.getCell(6).value, pedroRow.getCell(7).value, pedroRow.getCell(9).text]));
+  const luisRow = cons.getRow(5);
+  check('Luis figura sin horas', luisRow.getCell(1).text.includes('Luis') && luisRow.getCell(7).value === 0 && luisRow.getCell(9).text === 'NO');
+  const bitRows = [];
+  kitWb.getWorksheet('Bitácora videos').eachRow(r => bitRows.push([r.getCell(1).text, r.getCell(3).text, r.getCell(5).value, r.getCell(6).text]));
+  check('bitácora de la lectura de Pedro', bitRows.some(r => r[0].includes('Pedro') && r[1].includes('M1') && r[2] === 210 && r[3] === 'SÍ') && bitRows.some(r => r[0].includes('Luis') && r[2] === 0 && r[3] === 'NO'));
+  const taskRows = [];
+  kitWb.getWorksheet('Tareas y evaluaciones').eachRow(r => taskRows.push([r.getCell(1).text, r.getCell(4).text, r.getCell(8).value, r.getCell(3).text]));
+  check('la prueba final queda en tareas y evaluaciones', taskRows.some(r => r[0].includes('Pedro') && r[1] === 'Prueba final' && r[2] === 90));
+  const art = [];
+  kitWb.getWorksheet('Sensibilización (Art. 4)').eachRow(r => art.push([r.getCell(1).text, r.getCell(2).text, r.getCell(3).text, r.getCell(4).text]));
+  check('sensibilización del Art. 4', art.some(r => r[0] === '2026-03-12' && r[1] === 'Charla de socialización' && r[2].includes('45 minutos') && r[3].includes('planta')));
+  const zipRes = await admin('/api/admin/igualdad/companies/' + companyId + '/documentos.zip');
+  const zip = await JSZip.loadAsync(zipRes.buf);
+  const zipNames = Object.keys(zip.files).sort();
+  check('ZIP con los 8 documentos', zipRes.status === 200 && zipNames.length === 8 && zipNames.some(n => n.endsWith('.pdf')) && zipNames.some(n => n.includes('Politica')) && zipNames.some(n => n === 'Reporte_Igualdad_Salarial_1791234567001.xlsx'), zipNames.join(','));
+  const ui = await fetch(BASE + '/admin-igualdad.js');
+  const uiText = await ui.text();
+  check('la ficha ofrece Documentos de la empresa', uiText.includes('Documentos de la empresa') && uiText.includes('Descargar todo (ZIP)') && uiText.includes('name="ciudad"') && uiText.includes('name="actividad"'));
   const evalRow = dash.json.evaluaciones.find(r => r.cedula === '1710034065' && r.eval_key === 'final');
   check('tabla de evaluación con recálculo', evalRow && evalRow.estado.includes('recálculo') && evalRow.nota === 90, JSON.stringify(evalRow));
 

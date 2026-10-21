@@ -34,6 +34,9 @@ async function igualdadAdmin(root) {
       <label>Razón social<input name="razon_social" required value="${esc(c?.razon_social || '')}"></label>
       <label>RUC (13 dígitos)<input name="ruc" required inputmode="numeric" maxlength="13" value="${esc(c?.ruc || '')}"></label>
       <label class="full">Representante legal<input name="representante_legal" required value="${esc(c?.representante_legal || '')}"></label>
+      <label class="full">Dirección<input name="direccion" value="${esc(c?.direccion || '')}"></label>
+      <label>Ciudad<input name="ciudad" value="${esc(c?.ciudad || '')}"></label>
+      <label>Actividad económica<input name="actividad" value="${esc(c?.actividad || '')}"></label>
       <label class="full"><input type="checkbox" name="auto_approve" ${c?.auto_approve ? 'checked' : ''}> Aprobar lecturas y talleres automáticamente al entregarlos</label>
       <div><button class="btn btn-aula">${c ? 'Guardar datos' : 'Crear empresa'}</button> ${c ? '<button class="btn btn-sm danger" id="delEmp" type="button">Eliminar empresa</button>' : ''}</div>
     </form>`;
@@ -51,6 +54,19 @@ async function igualdadAdmin(root) {
     <p><a class="btn btn-sm btn-aula" href="/api/admin/igualdad/companies/${companyId}/reporte.xlsx">Descargar Excel para el Ministerio</a>
     <a class="btn btn-sm btn-sec" href="/api/admin/igualdad/solucionario" target="_blank">Solucionario HTML</a>
     <a class="btn btn-sm btn-sec" href="/api/admin/igualdad/solucionario.pdf">Solucionario PDF</a></p>
+    <h3>Documentos de la empresa</h3>
+    <p class="small">Afiches, política, acta, encuesta, instructivo y reporte, con la razón social, el RUC, el representante legal, la dirección, la ciudad, la actividad y el personal de esta empresa.</p>
+    <p>
+      <a class="btn btn-sm btn-sec" href="/api/admin/igualdad/companies/${companyId}/documentos/afiche-valor">Afiche · Igual valor</a>
+      <a class="btn btn-sm btn-sec" href="/api/admin/igualdad/companies/${companyId}/documentos/afiche-denuncia">Afiche · Canal de denuncia</a>
+      <a class="btn btn-sm btn-sec" href="/api/admin/igualdad/companies/${companyId}/documentos/afiche-tolerancia">Afiche · Tolerancia cero</a>
+      <a class="btn btn-sm btn-sec" href="/api/admin/igualdad/companies/${companyId}/documentos/politica">Política</a>
+      <a class="btn btn-sm btn-sec" href="/api/admin/igualdad/companies/${companyId}/documentos/acta">Acta de socialización</a>
+      <a class="btn btn-sm btn-sec" href="/api/admin/igualdad/companies/${companyId}/documentos/encuesta">Encuesta de clima</a>
+      <a class="btn btn-sm btn-sec" href="/api/admin/igualdad/companies/${companyId}/documentos/instructivo">Instructivo Art. 4</a>
+      <a class="btn btn-sm btn-sec" href="/api/admin/igualdad/companies/${companyId}/documentos/reporte">Reporte Excel</a>
+      <a class="btn btn-sm btn-aula" href="/api/admin/igualdad/companies/${companyId}/documentos.zip">Descargar todo (ZIP)</a>
+    </p>
     <h3>Trabajadores</h3><div class="table-wrap"><table class="t"><tr><th>Trabajador</th><th>Cargo</th><th>Lecturas (h)</th><th>Tareas (h)</th><th>Evaluaciones (h)</th><th>Total (h)</th><th>Avance</th><th></th></tr>
     ${data.workers.map(w => `<tr><td>${esc(w.nombre)}${w.directivo ? ' <span class="pill">Directivo</span>' : ''}<br><span class="small">${esc(w.cedula)}</span>${w.certificado ? `<br><span class="small">Cert. ${esc(w.certificado)}</span>` : ''}</td><td>${esc(w.cargo)}</td><td>${w.lecturas}</td><td>${w.tareas}</td><td>${w.evaluaciones}</td><td><b>${w.total}</b></td><td style="min-width:110px"><div class="bar"><i style="width:${w.avance}%"></i></div><span class="small">${w.avance} %</span></td><td><button class="btn btn-sm btn-sec" data-copy="${w.token}">Copiar link</button> <button class="btn btn-sm danger" data-delw="${w.id}">Eliminar</button></td></tr>`).join('') || '<tr><td colspan="8">Sin trabajadores</td></tr>'}
     </table></div>
@@ -74,7 +90,7 @@ async function igualdadAdmin(root) {
     root.querySelector('#emp').onsubmit = async e => {
       e.preventDefault();
       const fd = new FormData(e.target);
-      const body = { razon_social: fd.get('razon_social'), ruc: fd.get('ruc'), representante_legal: fd.get('representante_legal'), auto_approve: fd.get('auto_approve') === 'on' };
+      const body = { razon_social: fd.get('razon_social'), ruc: fd.get('ruc'), representante_legal: fd.get('representante_legal'), direccion: fd.get('direccion'), ciudad: fd.get('ciudad'), actividad: fd.get('actividad'), auto_approve: fd.get('auto_approve') === 'on' };
       try {
         if (data) { await api('/api/admin/igualdad/companies/' + companyId, { method: 'PATCH', body }); reload(companyId); }
         else { const r = await api('/api/admin/igualdad/companies', { body }); reload(r.id); }
