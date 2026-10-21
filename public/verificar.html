@@ -1,0 +1,14 @@
+<!doctype html><html lang="es-EC"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Verificar certificado | Consultoría Sánchez</title>
+<link rel="icon" href="/img/logo.png"><link rel="stylesheet" href="/styles.css"></head>
+<body class="app"><div class="wrap" id="root"></div>
+<script src="/common.js"></script><script>
+const code=(location.pathname.split('/').filter(Boolean)[1]||'').toUpperCase();
+const root=document.getElementById('root');
+(async()=>{
+ if(!code){root.innerHTML='<div class="panel"><h2 class="t">Verificar certificado</h2><p>Indique el código en la dirección, por ejemplo /verificar/CSIG-XXXXXXXX.</p></div>';return}
+ let d;try{d=await api('/api/verificar/'+encodeURIComponent(code))}catch(e){root.innerHTML='<div class="panel"><p class="err">'+esc(e.message)+'</p></div>';return}
+ if(!d.valid){root.innerHTML=`<div class="panel"><h2 class="t">Certificado no vigente</h2><p>El código <b>${esc(code)}</b> no corresponde a un certificado activo. Puede haberse retirado porque una evaluación dejó de estar aprobada, o el código no existe.</p><p class="banner-test">Versión de prueba de Consultoría Sánchez.</p></div>`;return}
+ root.innerHTML=`<div class="cert" style="margin:28px auto;max-width:760px"><p class="pill">Consultoría Sánchez</p><p class="small">La Maná · Cotopaxi</p><h2 class="t">Certificado vigente</h2><p class="emp">${esc(d.empresa)}</p><p>Trabajador: <b>${esc(d.trabajador)}</b><br>Cédula: ${esc(d.cedula)}</p><p class="hrs">${d.horas} horas</p><p>${esc(d.programa)}</p><p>Fecha: ${esc(d.fecha)}<br>Código: <b>${esc(d.code)}</b></p><p class="banner-test">Versión de prueba. Confirma la capacitación en esta plataforma. No reemplaza el reporte oficial ante el Ministerio del Trabajo.</p></div>`;
+})();
+</script></body></html>

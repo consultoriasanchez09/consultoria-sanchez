@@ -1,6 +1,6 @@
 <!doctype html><html lang="es-EC"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Administración | Consultoría Sánchez</title><link rel="icon" href="img/logo.png"><link rel="stylesheet" href="styles.css"></head>
 <body class="app"><div class="wrap" id="root"></div>
-<script src="common.js"></script><script>
+<script src="common.js"></script><script src="admin-igualdad.js"></script><script>
 const root=document.getElementById('root');let courses=[],students=[];
 function loginView(msg){root.innerHTML=`<div class="panel"><h2 class="t">⚙️ Administración</h2><form id="lf"><label>Usuario<input id="u"></label><label>Contraseña<input id="p" type="password"></label><p id="le" class="err">${msg||''}</p><button class="btn btn-aula" style="width:100%">Ingresar</button></form></div>`;
  lf.onsubmit=async e=>{e.preventDefault();try{const m=await api('/api/login',{body:{username:u.value,password:p.value}});if(m.role!='admin'){await api('/api/logout',{method:'POST'});return loginView('Esta cuenta no es administradora.')}init()}catch(x){le.textContent=x.message}}}
@@ -22,12 +22,21 @@ function render(){const opts=courses.map(c=>`<option value="${c.id}">${esc(c.tit
  <hr><h3>Cambiar mi contraseña de administrador</h3><form class="f" id="fp"><label>Nueva contraseña (mín. 8)<input name="password" type="password" required minlength="8"></label><div><button class="btn btn-aula">Guardar</button></div></form>`;
  const sub=(id,url,after)=>document.getElementById(id).onsubmit=async e=>{e.preventDefault();try{await api(url,{body:val(e.target)});after?after():load()}catch(x){alert(x.message)}};
  sub('fc','/api/admin/courses');sub('fl','/api/admin/lessons');sub('fs','/api/admin/students');sub('fe','/api/admin/enroll');sub('fp','/api/admin/password',()=>alert('Contraseña actualizada'))}
-async function showLessons(id){const ls=await api(`/api/admin/courses/${id}/lessons`);lessons.innerHTML=`<h3>Clases de: ${esc(courses.find(c=>c.id==id).title)}</h3><table class="t">${ls.map(l=>`<tr><td>${l.position}</td><td>${esc(l.title)}</td><td class="small">${esc(l.video_url)}</td><td><button class="btn btn-sm danger" onclick="del('lessons',${l.id})">Eliminar</button></td></tr>`).join('')||'<tr><td>Sin clases</td></tr>'}</table>`}
+async function showLessons(id){const ls=await api(`/api/admin/courses/${id}/lessons`);
+ lessons.innerHTML=`<h3>Clases de: ${esc(courses.find(c=>c.id==id).title)}</h3>`+(ls.map(l=>`<div class="lesson"><b>${l.position}. ${esc(l.title)}</b><div class="small">${esc(l.video_url||'Sin enlace de video en la clase')}</div>
+ <div class="small">${(l.files||[]).map(f=>`${esc(f.kind)} · ${esc(f.title)} <button class="btn btn-sm danger" onclick="delFile(${f.id},${id})">Quitar</button>`).join('<br>')||'Sin PDF, MP4 ni video adicional.'}</div>
+ <form class="f" onsubmit="return upFile(event,${l.id},${id})"><label>Tipo<select name="kind"><option value="video">Video (YouTube, Vimeo, Drive)</option><option value="pdf">PDF</option><option value="mp4">MP4</option></select></label><label>Título<input name="title" placeholder="Nombre del material"></label><label class="full">Enlace https<input name="url" placeholder="https://www.youtube.com/watch?v="></label><label class="full">Archivo<input name="file" type="file" accept="application/pdf,video/mp4,.pdf,.mp4"></label><div><button class="btn btn-sm btn-aula">Adjuntar a esta clase</button></div></form>
+ <button class="btn btn-sm danger" onclick="del('lessons',${l.id})">Eliminar clase</button></div>`).join('')||'<p>Sin clases</p>')}
+async function upFile(e,lessonId,courseId){e.preventDefault();const r=await fetch('/api/admin/lessons/'+lessonId+'/files',{method:'POST',body:new FormData(e.target)});const d=await r.json().catch(()=>({}));if(!r.ok){alert(d.error||'No se pudo adjuntar');return false}showLessons(courseId);return false}
+async function delFile(id,courseId){if(!confirm('¿Quitar este material?'))return;await api('/api/admin/lesson-files/'+id,{method:'DELETE'});showLessons(courseId)}
 async function del(t,id){if(confirm('¿Eliminar definitivamente?')){await api(`/api/admin/${t}/${id}`,{method:'DELETE'});load()}}
 async function gen(id){const r=await api(`/api/admin/students/${id}/code`,{method:'POST'});alert('Nuevo código de acceso: '+r.code);load()}
 async function pw(id){const p=prompt('Nueva contraseña del estudiante:');if(p){await api(`/api/admin/students/${id}/password`,{body:{password:p}});alert('Actualizada')}}
 async function unenroll(u,c){await api('/api/admin/unenroll',{body:{user_id:u,course_id:c}});load()}
 async function init(){let me;try{me=await api('/api/me')}catch{return loginView()}if(me.role!='admin')return loginView('Inicie sesión como administrador.');
- who.textContent=me.name;out.style.display='';root.innerHTML='<div class="layout"><aside class="side"><a class="on">📚 Cursos y estudiantes</a><a href="/aula">🎓 Ver Aula Virtual</a><a href="/">🏠 Sitio web</a></aside><div class="main" id="main"></div></div>';load()}
+ who.textContent=me.name;out.style.display='';root.innerHTML='<div class="layout"><aside class="side"><a id="navCursos" class="on">📚 Cursos y estudiantes</a><a id="navIgualdad">⚖️ Igualdad Salarial</a><a href="/aula">🎓 Ver Aula Virtual</a><a href="/igualdad">📄 Módulo del trabajador</a><a href="/">🏠 Sitio web</a></aside><div class="main" id="main"></div></div>';
+ navCursos.onclick=()=>{navCursos.classList.add('on');navIgualdad.classList.remove('on');load()};
+ navIgualdad.onclick=()=>{navIgualdad.classList.add('on');navCursos.classList.remove('on');igualdadAdmin(main)};
+ load()}
 init();
 </script></body></html>

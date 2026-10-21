@@ -4,6 +4,8 @@ const bcrypt = require('bcryptjs');
 const Database = require('better-sqlite3');
 const path = require('path');
 const crypto = require('crypto');
+const { initSchema, mountIgualdad } = require('./lib/igualdad');
+const { attachLessonFiles, removeLessonDisk, mountLessonFiles } = require('./lib/lesson-files');
 
 const PORT = process.env.PORT || 3000;
 const db = new Database(process.env.DB_PATH || path.join(__dirname, 'data.db'));
@@ -15,6 +17,7 @@ CREATE TABLE IF NOT EXISTS courses(id INTEGER PRIMARY KEY, title TEXT NOT NULL, 
 CREATE TABLE IF NOT EXISTS lessons(id INTEGER PRIMARY KEY, course_id INTEGER NOT NULL REFERENCES courses(id) ON DELETE CASCADE, title TEXT NOT NULL, content TEXT, video_url TEXT, material_url TEXT, position INTEGER DEFAULT 0);
 CREATE TABLE IF NOT EXISTS enrollments(user_id INTEGER REFERENCES users(id) ON DELETE CASCADE, course_id INTEGER REFERENCES courses(id) ON DELETE CASCADE, PRIMARY KEY(user_id, course_id));
 `);
+initSchema(db);
 
 // ---------- Seed ----------
 if (!db.prepare("SELECT 1 FROM users WHERE role='admin'").get()) {
@@ -121,7 +124,7 @@ app.get('/api/my/courses/:id', auth, (req, res) => {
     return res.status(403).json({ error: 'No está inscrito en este curso.' });
   const course = db.prepare('SELECT * FROM courses WHERE id=?').get(id);
   if (!course) return res.status(404).json({ error: 'No encontrado' });
-  course.lessons = db.prepare('SELECT * FROM lessons WHERE course_id=? ORDER BY position,id').all(id);
+  course.lessons = attachLessonFiles(db, db.prepare('SELECT * FROM lessons WHERE course_id=? ORDER BY position,id').all(id));
   res.json(course);
 });
 
@@ -130,11 +133,14 @@ const A = express.Router(); A.use(admin);
 A.get('/courses', (q, r) => r.json(db.prepare('SELECT c.*,(SELECT COUNT(*) FROM lessons WHERE course_id=c.id) lessons,(SELECT COUNT(*) FROM enrollments WHERE course_id=c.id) students FROM courses c ORDER BY id').all()));
 A.post('/courses', (q, r) => { const { title, area, description } = q.body; if (!title) return r.status(400).json({ error: 'Título requerido' });
   r.json({ id: db.prepare('INSERT INTO courses(title,area,description) VALUES(?,?,?)').run(title, area || '', description || '').lastInsertRowid }); });
-A.delete('/courses/:id', (q, r) => { db.prepare('DELETE FROM courses WHERE id=?').run(+q.params.id); r.json({ ok: true }); });
-A.get('/courses/:id/lessons', (q, r) => r.json(db.prepare('SELECT * FROM lessons WHERE course_id=? ORDER BY position,id').all(+q.params.id)));
+A.delete('/courses/:id', (q, r) => {
+  db.prepare('SELECT id FROM lessons WHERE course_id=?').all(+q.params.id).forEach(l => removeLessonDisk(db, l.id));
+  db.prepare('DELETE FROM courses WHERE id=?').run(+q.params.id); r.json({ ok: true });
+});
+A.get('/courses/:id/lessons', (q, r) => r.json(attachLessonFiles(db, db.prepare('SELECT * FROM lessons WHERE course_id=? ORDER BY position,id').all(+q.params.id))));
 A.post('/lessons', (q, r) => { const { course_id, title, content, video_url, material_url, position } = q.body; if (!course_id || !title) return r.status(400).json({ error: 'Curso y título requeridos' });
   r.json({ id: db.prepare('INSERT INTO lessons(course_id,title,content,video_url,material_url,position) VALUES(?,?,?,?,?,?)').run(+course_id, title, content || '', video_url || '', material_url || '', +position || 0).lastInsertRowid }); });
-A.delete('/lessons/:id', (q, r) => { db.prepare('DELETE FROM lessons WHERE id=?').run(+q.params.id); r.json({ ok: true }); });
+A.delete('/lessons/:id', (q, r) => { removeLessonDisk(db, +q.params.id); db.prepare('DELETE FROM lessons WHERE id=?').run(+q.params.id); r.json({ ok: true }); });
 A.get('/students', (q, r) => r.json(db.prepare("SELECT u.id,u.username,u.name,u.email,u.access_code,(SELECT GROUP_CONCAT(course_id) FROM enrollments WHERE user_id=u.id) courses FROM users u WHERE role='student' ORDER BY id").all()));
 A.post('/students', (q, r) => { const { name, username, password, email } = q.body; if (!name) return r.status(400).json({ error: 'Nombre requerido' });
   try { r.json({ id: db.prepare("INSERT INTO users(username,password_hash,name,email,role) VALUES(?,?,?,?,'student')").run(username || null, password ? bcrypt.hashSync(password, 10) : null, name, email || '').lastInsertRowid }); }
@@ -148,6 +154,8 @@ A.post('/enroll', (q, r) => { db.prepare('INSERT OR IGNORE INTO enrollments VALU
 A.post('/unenroll', (q, r) => { db.prepare('DELETE FROM enrollments WHERE user_id=? AND course_id=?').run(+q.body.user_id, +q.body.course_id); r.json({ ok: true }); });
 A.post('/password', (q, r) => { if (!q.body.password || q.body.password.length < 8) return r.status(400).json({ error: 'Mínimo 8 caracteres' });
   db.prepare('UPDATE users SET password_hash=? WHERE id=?').run(bcrypt.hashSync(q.body.password, 10), q.user.id); r.json({ ok: true }); });
+mountLessonFiles(A, app, db, auth);
 app.use('/api/admin', A);
+mountIgualdad(app, db, admin);
 
 app.listen(PORT, () => console.log(`Consultoría Sánchez en http://localhost:${PORT}`));
