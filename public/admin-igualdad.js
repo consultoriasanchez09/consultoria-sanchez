@@ -24,6 +24,7 @@ async function igualdadAdmin(root) {
     ${flash ? `<p class="ok-pill">${esc(flash)}</p>` : ''}
     <form class="f" id="pick"><label>Empresa<select name="id"><option value="">— Nueva —</option>${opts}</select></label></form>
     ${companyForm()}
+    ${loteForm()}
     ${data ? dashboard() : '<p>Cree la primera empresa para registrar trabajadores y horas.</p>'}`;
     bind();
   }
@@ -37,9 +38,38 @@ async function igualdadAdmin(root) {
       <label class="full">Dirección<input name="direccion" value="${esc(c?.direccion || '')}"></label>
       <label>Ciudad<input name="ciudad" value="${esc(c?.ciudad || '')}"></label>
       <label>Actividad económica<input name="actividad" value="${esc(c?.actividad || '')}"></label>
+      <label>Período del certificado<input name="periodo" type="number" min="2000" max="2100" value="${esc(c?.periodo || 2025)}"></label>
+      <label>Fecha de los certificados<input name="cert_fecha" type="date" value="${esc(c?.cert_fecha || ((c?.periodo || 2025) + '-12-15'))}"></label>
       <label class="full"><input type="checkbox" name="auto_approve" ${c?.auto_approve ? 'checked' : ''}> Aprobar lecturas y talleres automáticamente al entregarlos</label>
       <div><button class="btn btn-aula">${c ? 'Guardar datos' : 'Crear empresa'}</button> ${c ? '<button class="btn btn-sm danger" id="delEmp" type="button">Eliminar empresa</button>' : ''}</div>
     </form>`;
+  }
+
+  function loteForm() {
+    const c = data?.company;
+    const periodo = c?.periodo || 2025;
+    const fecha = c?.cert_fecha || (periodo + '-12-15');
+    return `<h3>Emitir certificados en lote</h3>
+    <p class="small">Escriba una persona por línea: nombre, cédula, cargo. Se descarga un ZIP con un PDF por trabajador y un índice. Cada código CSLM- queda verificable en /verificar. La fecha tiene que caer en el período; con período ${periodo} la fecha sugerida es el 15 de diciembre.</p>
+    <form class="f" id="lote">
+      <label>Razón social<input name="razon_social" required value="${esc(c?.razon_social || '')}"></label>
+      <label>RUC<input name="ruc" required maxlength="13" value="${esc(c?.ruc || '')}"></label>
+      <label>Período<input name="periodo" type="number" min="2000" max="2100" value="${periodo}"></label>
+      <label>Fecha de aprobación y emisión<input name="fecha" type="date" value="${esc(fecha)}"></label>
+      <label class="full">Trabajadores<textarea name="lista" rows="6" placeholder="Ana Pérez, 1712345675, Cajera"></textarea></label>
+      <label class="full">O un CSV<input name="archivo" type="file" accept=".csv,text/csv"></label>
+      <div><button class="btn btn-aula">Descargar ZIP</button></div>
+    </form>`;
+  }
+
+  function parseLista(text) {
+    return String(text || '').split(/\r?\n/).map(line => line.trim()).filter(Boolean).flatMap(line => {
+      if (/^nombre\b/i.test(line)) return [];
+      const sep = line.includes(';') ? ';' : ',';
+      const parts = line.split(sep).map(s => s.trim().replace(/^"|"$/g, ''));
+      if (parts.length < 3) return [];
+      return [{ nombre: parts[0], cedula: parts[1], cargo: parts.slice(2).join(', ') }];
+    });
   }
 
   function dashboard() {
@@ -68,7 +98,7 @@ async function igualdadAdmin(root) {
       <a class="btn btn-sm btn-aula" href="/api/admin/igualdad/companies/${companyId}/documentos.zip">Descargar todo (ZIP)</a>
     </p>
     <h3>Trabajadores</h3><div class="table-wrap"><table class="t"><tr><th>Trabajador</th><th>Cargo</th><th>Lecturas (h)</th><th>Tareas (h)</th><th>Evaluaciones (h)</th><th>Total (h)</th><th>Avance</th><th></th></tr>
-    ${data.workers.map(w => `<tr><td>${esc(w.nombre)}${w.directivo ? ' <span class="pill">Directivo</span>' : ''}<br><span class="small">${esc(w.cedula)}</span>${w.certificado ? `<br><span class="small">Cert. ${esc(w.certificado)}</span>` : ''}</td><td>${esc(w.cargo)}</td><td>${w.lecturas}</td><td>${w.tareas}</td><td>${w.evaluaciones}</td><td><b>${w.total}</b></td><td style="min-width:110px"><div class="bar"><i style="width:${w.avance}%"></i></div><span class="small">${w.avance} %</span></td><td><button class="btn btn-sm btn-sec" data-copy="${w.token}">Copiar link</button> <button class="btn btn-sm danger" data-delw="${w.id}">Eliminar</button></td></tr>`).join('') || '<tr><td colspan="8">Sin trabajadores</td></tr>'}
+    ${data.workers.map(w => `<tr><td>${esc(w.nombre)}${w.directivo ? ' <span class="pill">Directivo</span>' : ''}<br><span class="small">${esc(w.cedula)}</span>${w.certificado ? `<br><span class="small">Cert. ${esc(w.certificado)} · Período ${esc(w.periodo || '')}</span><form data-cert="${w.id}"><input type="date" name="fechaAprobacion" value="${esc(w.fechaAprobacion || '')}" title="Fecha de aprobación"><input type="date" name="fechaEmision" value="${esc(w.fechaEmision || '')}" title="Fecha de emisión"><button class="btn btn-sm btn-sec">Fechas</button></form>` : ''}</td><td>${esc(w.cargo)}</td><td>${w.lecturas}</td><td>${w.tareas}</td><td>${w.evaluaciones}</td><td><b>${w.total}</b></td><td style="min-width:110px"><div class="bar"><i style="width:${w.avance}%"></i></div><span class="small">${w.avance} %</span></td><td><button class="btn btn-sm btn-sec" data-copy="${w.token}">Copiar link</button> <button class="btn btn-sm danger" data-delw="${w.id}">Eliminar</button></td></tr>`).join('') || '<tr><td colspan="8">Sin trabajadores</td></tr>'}
     </table></div>
     <h3>Agregar trabajador</h3><form class="f" id="nw"><label>Nombre<input name="nombre" required></label><label>Cédula<input name="cedula" required inputmode="numeric" maxlength="10"></label><label>Cargo<input name="cargo" required></label><label><input type="checkbox" name="directivo"> Directivo/Rep. legal</label><div><button class="btn btn-aula">Agregar</button></div></form>
     <h3>Importar Excel o CSV</h3><p class="small"><a href="/api/admin/igualdad/plantilla.xlsx">Descargar plantilla Excel</a> · <a href="/api/admin/igualdad/plantilla.csv">Descargar plantilla CSV</a>. Columnas: nombre, cedula, cargo, directivo. Borre la fila de ejemplo.</p>
@@ -90,7 +120,7 @@ async function igualdadAdmin(root) {
     root.querySelector('#emp').onsubmit = async e => {
       e.preventDefault();
       const fd = new FormData(e.target);
-      const body = { razon_social: fd.get('razon_social'), ruc: fd.get('ruc'), representante_legal: fd.get('representante_legal'), direccion: fd.get('direccion'), ciudad: fd.get('ciudad'), actividad: fd.get('actividad'), auto_approve: fd.get('auto_approve') === 'on' };
+      const body = { razon_social: fd.get('razon_social'), ruc: fd.get('ruc'), representante_legal: fd.get('representante_legal'), direccion: fd.get('direccion'), ciudad: fd.get('ciudad'), actividad: fd.get('actividad'), auto_approve: fd.get('auto_approve') === 'on', periodo: Number(fd.get('periodo')), cert_fecha: fd.get('cert_fecha') };
       try {
         if (data) { await api('/api/admin/igualdad/companies/' + companyId, { method: 'PATCH', body }); reload(companyId); }
         else { const r = await api('/api/admin/igualdad/companies', { body }); reload(r.id); }
@@ -156,6 +186,36 @@ async function igualdadAdmin(root) {
       reload(companyId);
     };
     root.querySelectorAll('[data-delm]').forEach(b => b.onclick = async () => { await api('/api/admin/igualdad/materiales/' + b.dataset.delm, { method: 'DELETE' }); reload(companyId); });
+    root.querySelectorAll('[data-cert]').forEach(f => f.onsubmit = async e => {
+      e.preventDefault();
+      const fd = new FormData(f);
+      try {
+        await api('/api/admin/igualdad/workers/' + f.dataset.cert + '/certificado', { body: { fechaAprobacion: fd.get('fechaAprobacion'), fechaEmision: fd.get('fechaEmision') } });
+        flash = 'Fechas del certificado actualizadas.';
+        reload(companyId, true);
+      } catch (err) { alert(err.message); }
+    });
+    const lote = root.querySelector('#lote');
+    if (lote) lote.onsubmit = async e => {
+      e.preventDefault();
+      const fd = new FormData(lote);
+      let text = String(fd.get('lista') || '');
+      const file = fd.get('archivo');
+      if (file && file.size) text = await file.text();
+      const trabajadores = parseLista(text);
+      if (!trabajadores.length) return alert('Indique al menos un trabajador: nombre, cédula, cargo.');
+      const r = await fetch('/api/admin/igualdad/certificados', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ razon_social: fd.get('razon_social'), ruc: fd.get('ruc'), periodo: Number(fd.get('periodo')), fecha: fd.get('fecha'), trabajadores }) });
+      if (!r.ok) { const d = await r.json().catch(() => ({})); return alert(d.error || 'No se emitieron los certificados.'); }
+      const blob = await r.blob();
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'certificados-igualdad.zip';
+      a.click();
+      flash = `Se emitieron ${trabajadores.length} certificados.`;
+      const list = await api('/api/admin/igualdad/companies');
+      const match = list.find(c => c.ruc === String(fd.get('ruc') || '').replace(/\D/g, ''));
+      reload(match ? match.id : companyId, true);
+    };
   }
 
   try { await reload(companyId); }

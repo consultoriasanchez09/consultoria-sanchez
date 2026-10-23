@@ -99,23 +99,23 @@ function certHtml() {
   ];
   const nota = c.nota == null ? '' : `Nota final ${esc(c.nota)} % · `;
   return `<article class="diploma">
-    <div class="diploma-band"><span>Consultoría Sánchez · La Maná</span></div>
+    <div class="diploma-band"><span>Consultoría Sánchez</span></div>
     <div class="diploma-body">
       <img src="/img/logo.png" alt="">
-      <p class="diploma-firm">Consultoría Sánchez La Maná</p>
-      <p class="diploma-place">Capacitación laboral y de género · La Maná, Cotopaxi</p>
-      <p class="diploma-says">Consultoría Sánchez La Maná certifica que</p>
+      <p class="diploma-firm">Consultoría Sánchez</p>
+      <p class="diploma-place">Capacitación laboral y de género</p>
+      <p class="diploma-says">Consultoría Sánchez certifica que</p>
       <p class="diploma-name">${esc(w.nombre)}</p>
       <p class="diploma-meta">C.I. ${esc(w.cedula)} · ${esc(w.cargo)}</p>
       <p class="diploma-text">aprobó el curso de capacitación Igualdad Salarial y No Discriminación, con una duración de 40 horas académicas.</p>
       <p class="diploma-label">Temas del curso</p>
       <ul class="diploma-temas">${temas.map(t => `<li>${esc(t)}</li>`).join('')}</ul>
-      <p class="diploma-facts"><b>${esc(e.razon_social)}</b> · RUC ${esc(e.ruc)}<br>${nota}Aprobado el ${esc(c.fechaAprobacion || c.fecha)} · Emitido el ${esc(c.fecha)}</p>
+      <p class="diploma-facts"><b>Trabajador(a) de la empresa: ${esc(e.razon_social)} · RUC ${esc(e.ruc)}</b><br>Período ${esc(c.periodo || c.anio)} · ${nota}Aprobado el ${esc(c.fechaAprobacion || c.fecha)} · Emitido el ${esc(c.fechaEmision || c.fecha)}</p>
       <div class="diploma-end">
         <div class="cert-sign"><p class="name">Mgs. Glenda Sánchez Sigcha</p><p class="role">Capacitadora</p><p class="firm">Consultoría Sánchez</p></div>
         <div class="diploma-qr"><img src="/api/verificar/${esc(c.code)}/qr.png" alt="Código QR"><b>${esc(c.code)}</b></div>
       </div>
-      <p class="diploma-issued">Emitido por Consultoría Sánchez La Maná</p>
+      <p class="diploma-issued">Emitido por Consultoría Sánchez</p>
       <p class="diploma-law">Referencia normativa: Acuerdo Ministerial MDT-2025-006.</p>
     </div>
   </article>

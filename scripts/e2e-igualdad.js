@@ -1,6 +1,6 @@
 'use strict';
 
-const { spawn } = require('child_process');
+const { spawn, spawnSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const ExcelJS = require('exceljs');
@@ -182,12 +182,16 @@ async function main() {
     && /\/MediaBox\s*\[\s*0\s+0\s+595\.2[0-9]*\s+841\.8/.test(pdfRaw)
     && pdfText.includes('Alimentos Andinos') && pdfText.includes('Pedro Prueba') && pdfText.includes('1710034065')
     && pdfText.includes('Supervisor de bodega') && pdfText.includes('1791234567001')
-    && pdfText.includes('Consultoría Sánchez La Maná certifica que')
+    && pdfText.includes('Consultoría Sánchez certifica que')
+    && pdfText.includes('Capacitación laboral y de género')
     && pdfText.includes('aprobó el curso de capacitación Igualdad Salarial y No Discriminación, con una duración de 40 horas académicas.')
+    && pdfText.includes('Trabajador(a) de la empresa: Alimentos Andinos Cía. Ltda. · RUC 1791234567001')
+    && pdfText.includes('Período 2025') && pdfText.includes('diciembre de 2025')
     && pdfText.includes('brecha salarial') && pdfText.includes('igual valor')
     && pdfText.includes('Nota final 100 %') && pdfText.includes('Aprobado el') && pdfText.includes('Emitido el')
     && pdfText.includes('Mgs. Glenda Sánchez Sigcha') && pdfText.includes('Capacitadora') && !pdfText.includes('Representante Legal') && !pdfText.includes('Sikcha')
-    && pdfText.includes('Emitido por Consultoría Sánchez La Maná')
+    && pdfText.includes('Emitido por Consultoría Sánchez')
+    && !pdfText.includes('La Maná')
     && pdfText.includes('MDT-2025-006') && pdfText.includes(code)
     && copiado.every(s => !pdfText.includes(s)),
     pdfText.slice(0, 500) + ' pages=' + pages);
@@ -204,13 +208,16 @@ async function main() {
     && ver.json.horas === 40
     && ver.json.estado === 'APROBADO'
     && ver.json.nota === 100
-    && ver.json.fechaAprobacion
-    && ver.json.fechaEmision
+    && ver.json.periodo === 2025
+    && ver.json.empresaLinea === 'Trabajador(a) de la empresa: Alimentos Andinos Cía. Ltda. · RUC 1791234567001'
+    && ver.json.fechaAprobacion.includes('diciembre de 2025')
+    && ver.json.fechaEmision.includes('diciembre de 2025')
+    && ver.json.emisor === 'Consultoría Sánchez'
     && ver.json.code === code
     && ver.json.aprobadoPor === 'Mgs. Glenda Sánchez Sigcha\nCapacitadora\nConsultoría Sánchez',
     JSON.stringify(ver.json));
   const page = await pub('/verificar/' + code);
-  check('página de verificación', page.status === 200 && page.text.includes('Fecha de aprobación') && page.text.includes('Consultoría Sánchez La Maná certifica que') && page.text.includes('Mgs. Glenda Sánchez Sigcha') && page.text.includes('Capacitadora') && page.text.includes('Emitido por Consultoría Sánchez La Maná') && page.text.includes('CSLM-') && !page.text.includes('Representante Legal') && !page.text.includes('Sikcha') && !page.text.includes('Programa Anual Obligatorio') && !page.text.includes('Se otorga') && page.text.includes('d.cedula') && page.text.includes('d.fechaEmision'));
+  check('página de verificación', page.status === 200 && page.text.includes('Fecha de aprobación') && page.text.includes('Consultoría Sánchez certifica que') && page.text.includes('Trabajador(a) de la empresa:') && page.text.includes('Mgs. Glenda Sánchez Sigcha') && page.text.includes('Capacitadora') && page.text.includes('Emitido por Consultoría Sánchez') && page.text.includes('CSLM-') && !page.text.includes('La Maná') && !page.text.includes('Representante Legal') && !page.text.includes('Sikcha') && !page.text.includes('Programa Anual Obligatorio') && !page.text.includes('Se otorga') && page.text.includes('d.cedula') && page.text.includes('d.fechaEmision'));
   const qr = await pub('/api/verificar/' + code + '/qr.png');
   check('QR del certificado', qr.status === 200 && qr.buf.slice(0, 8).toString('hex') === '89504e470d0a1a0a');
 
@@ -291,7 +298,7 @@ async function main() {
   check('ZIP con los 8 documentos', zipRes.status === 200 && zipNames.length === 8 && zipNames.some(n => n.endsWith('.pdf')) && zipNames.some(n => n.includes('Politica')) && zipNames.some(n => n === 'Reporte_Igualdad_Salarial_1791234567001.xlsx'), zipNames.join(','));
   const ui = await fetch(BASE + '/admin-igualdad.js');
   const uiText = await ui.text();
-  check('la ficha ofrece Documentos de la empresa', uiText.includes('Documentos de la empresa') && uiText.includes('Descargar todo (ZIP)') && uiText.includes('name="ciudad"') && uiText.includes('name="actividad"'));
+  check('la ficha ofrece Documentos de la empresa', uiText.includes('Documentos de la empresa') && uiText.includes('Descargar todo (ZIP)') && uiText.includes('name="ciudad"') && uiText.includes('name="actividad"') && uiText.includes('Emitir certificados en lote') && uiText.includes('name="periodo"'));
   const evalRow = dash.json.evaluaciones.find(r => r.cedula === '1710034065' && r.eval_key === 'final');
   check('tabla de evaluación con recálculo', evalRow && evalRow.estado.includes('recálculo') && evalRow.nota === 90, JSON.stringify(evalRow));
 
@@ -357,6 +364,41 @@ async function main() {
   const info = await fetch(BASE + '/');
   const homeHtml = await info.text();
   check('enlace en servicios', homeHtml.includes('/igualdad') && homeHtml.includes('Igualdad salarial'));
+
+  const fuera = await admin('/api/admin/igualdad/certificados', { body: { razon_social: 'Alimentos Andinos Cía. Ltda.', ruc: '1791234567001', periodo: 2025, fecha: '2026-01-02', trabajadores: [{ nombre: 'Ana Lote', cedula: '1712345675', cargo: 'Cajera' }] } });
+  check('fecha fuera del período', fuera.status === 400, fuera.text.slice(0, 200));
+  const lote = await admin('/api/admin/igualdad/certificados', { body: { razon_social: 'Alimentos Andinos Cía. Ltda.', ruc: '1791234567001', periodo: 2025, fecha: '2025-12-15', trabajadores: [{ nombre: 'Ana Lote', cedula: '1712345675', cargo: 'Cajera' }, { nombre: 'Luis Lote', cedula: '0901234567', cargo: 'Chofer' }] } });
+  const loteZip = await JSZip.loadAsync(lote.buf);
+  const loteNames = Object.keys(loteZip.files);
+  check('lote ZIP con dos PDF', lote.status === 200 && loteNames.filter(n => n.endsWith('.pdf')).length === 2 && loteNames.includes('indice.csv'), loteNames.join(','));
+  const lotePdf = decodePdfText(await loteZip.file(loteNames.find(n => n.endsWith('.pdf'))).async('nodebuffer'));
+  check('PDF del lote con período y empresa', lotePdf.includes('Período 2025') && lotePdf.includes('Trabajador(a) de la empresa: Alimentos Andinos') && lotePdf.includes('Emitido por Consultoría Sánchez') && !lotePdf.includes('La Maná') && !lotePdf.includes('Nota final'));
+  dash = await admin('/api/admin/igualdad/companies/' + companyId);
+  const ana = dash.json.workers.find(w => w.cedula === '1712345675');
+  check('el lote deja un código verificable', ana && ana.certificado && ana.certificado.startsWith('CSLM-') && ana.fechaAprobacion === '2025-12-15');
+  const anaView = await pub('/api/igualdad/' + ana.token);
+  check('el certificado emitido en lote no depende del avance', anaView.json.certificate && anaView.json.certificate.code === ana.certificado && anaView.json.hours.total === 0 && anaView.json.certificate.periodo === 2025);
+  const anaVer = await pub('/api/verificar/' + ana.certificado);
+  check('verificar el lote', anaVer.json.valid === true && anaVer.json.trabajador === 'Ana Lote' && anaVer.json.cargo === 'Cajera' && anaVer.json.periodo === 2025 && anaVer.json.nota == null && anaVer.json.fechaEmision.includes('diciembre de 2025'));
+  const fechas = await admin('/api/admin/igualdad/workers/' + pedro.id + '/certificado', { body: { fechaAprobacion: '2025-06-01', fechaEmision: '2025-06-01' } });
+  const pedroVer = await pub('/api/verificar/' + fechas.json.code);
+  check('admin cambia la fecha dentro de 2025', fechas.status === 200 && pedroVer.json.fechaAprobacion.includes('junio de 2025') && pedroVer.json.fechaEmision.includes('junio de 2025'), JSON.stringify(pedroVer.json));
+  const malAnio = await admin('/api/admin/igualdad/workers/' + pedro.id + '/certificado', { body: { fechaAprobacion: '2026-06-01', fechaEmision: '2026-06-01' } });
+  check('no acepta una fecha de otro año', malAnio.status === 400);
+
+  const cliOut = '/tmp/ig-cli-out-' + Date.now();
+  const cliDb = cliOut + '.db';
+  const cliJson = cliOut + '.json';
+  fs.mkdirSync(cliOut, { recursive: true });
+  fs.writeFileSync(cliJson, JSON.stringify({ razon_social: 'Comercial del Valle', ruc: '0999999999001', periodo: 2025, trabajadores: [{ nombre: 'Rosa Valle', cedula: '1755555552', cargo: 'Auxiliar' }] }));
+  const cli = spawnSync(process.execPath, ['scripts/generar-certificados.js', '--input', cliJson, '--out', cliOut, '--db', cliDb, '--periodo', '2025', '--base', BASE], { cwd: path.join(__dirname, '..'), encoding: 'utf8' });
+  const cliPdf = fs.readdirSync(cliOut).find(n => n.endsWith('.pdf'));
+  const cliText = cliPdf ? decodePdfText(fs.readFileSync(path.join(cliOut, cliPdf))) : '';
+  const cliIndex = fs.existsSync(path.join(cliOut, 'indice.csv')) ? fs.readFileSync(path.join(cliOut, 'indice.csv'), 'utf8') : '';
+  check('CLI escribe el PDF y el índice', cli.status === 0 && cliPdf && cliText.includes('Rosa Valle') && cliText.includes('Período 2025') && cliText.includes('Trabajador(a) de la empresa: Comercial del Valle') && cliIndex.includes('CSLM-'), (cli.stderr || cli.stdout || '').slice(0, 300));
+  const Database = require('better-sqlite3');
+  const cliRow = new Database(cliDb).prepare('SELECT code FROM ig_certificates').get();
+  check('CLI registra el código en la base', cliRow && cliIndex.includes(cliRow.code));
 
   const failed = results.filter(r => !r.ok);
   console.log('\n' + results.filter(r => r.ok).length + '/' + results.length + ' checks');
