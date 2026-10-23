@@ -112,7 +112,7 @@ function certHtml() {
     <p class="lead">Por haber completado y aprobado satisfactoriamente los 4 ejes curriculares obligatorios (40 horas lectivas):</p>
     <div class="cert-mods">${mods}</div>
     <div class="cert-bottom">
-      <div class="cert-sign"><p class="name">Glenda Sanchez</p><p class="role">Representante Legal</p><p class="firm">Consultoría Sánchez La Maná</p></div>
+      <div class="cert-sign"><p class="name">Mgs. Glenda Sánchez Sigcha</p><p class="role">Capacitadora</p><p class="firm">Consultoría Sánchez</p></div>
       <div class="cert-seal"><b>40 HORAS</b><em>APROBADO</em><span>PERÍODO ${esc(anio)}</span></div>
       <div class="cert-verify"><img src="/api/verificar/${esc(c.code)}/qr.png" alt="Código QR de verificación"><div><p><b>VERIFICACIÓN DIGITAL</b></p><p>ID Certificado<br><b>${esc(c.code)}</b></p><p>Emisión: ${esc(c.fecha)}</p><p><a href="/verificar/${esc(c.code)}">Registro electrónico verificable</a></p></div></div>
     </div>

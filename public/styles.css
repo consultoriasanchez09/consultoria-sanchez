@@ -90,7 +90,7 @@ table.t{width:100%;border-collapse:collapse;font-size:.95rem}table.t td,table.t 
 .cert-mod span{color:#5b6b7b;font-size:.72rem}
 .cert-bottom{display:grid;grid-template-columns:1.1fr .8fr 1.2fr;gap:12px;align-items:center;margin-top:14px}
 .cert-sign{border-top:1px solid #C4A35A;padding-top:8px}
-.cert-sign .name{font-family:Georgia,"Times New Roman",serif;font-style:italic;font-size:1.15rem;color:var(--navy);margin:0}
+.cert-sign .name{font-family:Georgia,"Times New Roman",serif;font-style:italic;font-size:1.05rem;color:var(--navy);margin:0;line-height:1.25}
 .cert-sign .role{margin:0;color:var(--azul-osc);font-weight:800;font-size:.78rem}
 .cert-sign .firm{margin:0;font-size:.78rem}
 .cert-seal{width:108px;height:108px;margin:0 auto;border:3px solid #C4A35A;border-radius:50%;box-shadow:inset 0 0 0 1px var(--navy);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
@@ -115,6 +115,9 @@ table.t{width:100%;border-collapse:collapse;font-size:.95rem}table.t td,table.t 
 .vgrid dt{font-size:.72rem;letter-spacing:.04em;text-transform:uppercase;color:#5b6b7b}
 .vgrid dd{margin:2px 0 0;font-weight:700;color:var(--navy)}
 .vwho{background:#f8fbfe;border-left:4px solid #C4A35A;padding:12px 14px;margin:8px 0;font-family:Georgia,"Times New Roman",serif;color:var(--navy);font-size:1.02rem}
+.vwho .name{display:block;font-style:italic;font-size:1.2rem}
+.vwho .role{display:block;color:var(--azul-osc);font-weight:800;font-size:.82rem;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.vwho .firm{display:block;font-size:.9rem;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
 .vcourse{text-align:center;background:#f8fbfe;border-radius:10px;padding:12px 14px;margin:8px 0 4px}
 .vcourse span{display:block;font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:#5b6b7b}
 .vcourse strong{display:block;font-family:Georgia,"Times New Roman",serif;color:var(--navy);font-size:1.15rem;margin-top:2px}

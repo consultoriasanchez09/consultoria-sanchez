@@ -31,7 +31,7 @@ function shell(inner){
     ${fila('ID del certificado', d.code)}
     ${fila('Fecha de emisión', d.fechaEmision || d.fecha)}
   </dl>
-  <p class="vwho">${esc(d.aprobadoPor || 'Aprobado por: Glenda Sanchez – Representante Legal, Consultoría Sánchez La Maná')}</p>
+  <p class="vwho">${String(d.aprobadoPor || 'Mgs. Glenda Sánchez Sigcha\nCapacitadora\nConsultoría Sánchez').split('\n').map(function(linea, i){return '<span class="' + (['name','role','firm'][i] || 'firm') + '">' + esc(linea) + '</span>';}).join('')}</p>
   <div class="cert-verify vqr"><img src="/api/verificar/${esc(d.code)}/qr.png" alt="Código QR de este certificado"><div><p><b>Registro electrónico</b></p><p>El código de este certificado es <b>${esc(d.code)}</b>. La emisión es el ${esc(d.fechaEmision || d.fecha)}.</p></div></div>`);
 })();
 </script></body></html>

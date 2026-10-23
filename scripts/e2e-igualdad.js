@@ -182,7 +182,7 @@ async function main() {
     && pdfText.includes('Alimentos Andinos') && pdfText.includes('Pedro Prueba') && pdfText.includes('1710034065')
     && pdfText.includes('Supervisor de bodega') && pdfText.includes('1791234567001')
     && pdfText.includes('40 horas lectivas') && pdfText.includes('Consultoría')
-    && pdfText.includes('Glenda Sanchez') && pdfText.includes('Representante Legal')
+    && pdfText.includes('Mgs. Glenda Sánchez Sigcha') && pdfText.includes('Capacitadora') && !pdfText.includes('Representante Legal') && !pdfText.includes('Sikcha')
     && pdfText.includes('EMITIDO POR CONSULTORÍA SÁNCHEZ LA MANÁ')
     && pdfText.includes('LEY ORGÁNICA PARA LA IGUALDAD SALARIAL')
     && pdfText.includes('MDT-2025-006') && pdfText.includes('40 HORAS') && pdfText.includes('APROBADO'),
@@ -201,10 +201,10 @@ async function main() {
     && ver.json.fechaAprobacion
     && ver.json.fechaEmision
     && ver.json.code === code
-    && ver.json.aprobadoPor === 'Aprobado por: Glenda Sanchez – Representante Legal, Consultoría Sánchez La Maná',
+    && ver.json.aprobadoPor === 'Mgs. Glenda Sánchez Sigcha\nCapacitadora\nConsultoría Sánchez',
     JSON.stringify(ver.json));
   const page = await pub('/verificar/' + code);
-  check('página de verificación', page.status === 200 && page.text.includes('Fecha de aprobación') && page.text.includes('Aprobado por: Glenda Sanchez') && page.text.includes('d.cedula') && page.text.includes('d.fechaEmision'));
+  check('página de verificación', page.status === 200 && page.text.includes('Fecha de aprobación') && page.text.includes('Mgs. Glenda Sánchez Sigcha') && page.text.includes('Capacitadora') && page.text.includes('Consultoría Sánchez') && !page.text.includes('Representante Legal') && !page.text.includes('Sikcha') && page.text.includes('d.cedula') && page.text.includes('d.fechaEmision'));
   const qr = await pub('/api/verificar/' + code + '/qr.png');
   check('QR del certificado', qr.status === 200 && qr.buf.slice(0, 8).toString('hex') === '89504e470d0a1a0a');
 
