@@ -400,6 +400,40 @@ async function main() {
   const cliRow = new Database(cliDb).prepare('SELECT code FROM ig_certificates').get();
   check('CLI registra el código en la base', cliRow && cliIndex.includes(cliRow.code));
 
+  const { certificatePdf } = require('../lib/pdf');
+  const largoNombre = 'BERMELLO CEDEÑO WILLIANS LEOVIGILDO';
+  const largoCargo = 'Supervisor general de bodega, logística, distribución nacional y control de inventarios';
+  const largoBuf = await certificatePdf({
+    nombre: largoNombre,
+    cedula: '1710034065',
+    cargo: largoCargo,
+    empresa: 'Alimentos Andinos Cía. Ltda.',
+    ruc: '1791234567001',
+    empresaLinea: 'Trabajador(a) de la empresa: Alimentos Andinos Cía. Ltda. · RUC 1791234567001',
+    periodo: 2025,
+    fecha: '15 de diciembre de 2025',
+    fechaAprobacion: '15 de diciembre de 2025',
+    nota: 100,
+    code: 'CSLM-DA93FCE9',
+    verifyUrl: BASE + '/verificar/CSLM-DA93FCE9'
+  });
+  const largoText = decodePdfText(largoBuf);
+  const largoRaw = largoBuf.toString('latin1');
+  const largoPages = (largoRaw.match(/\/Type\s*\/Page[^s]/g) || []).length;
+  check('nombre y cargo largos se ajustan sin recortar', largoPages === 1
+    && /\/MediaBox\s*\[\s*0\s+0\s+595\.2[0-9]*\s+841\.8/.test(largoRaw)
+    && largoText.includes(largoNombre)
+    && largoText.includes(largoCargo)
+    && !largoText.includes('…')
+    && !largoText.includes('\u0085')
+    && largoText.includes('Consultoría Sánchez certifica que')
+    && largoText.includes('Período 2025')
+    && largoText.includes('Mgs. Glenda Sánchez Sigcha')
+    && largoText.includes('Capacitadora')
+    && largoText.includes('Trabajador(a) de la empresa: Alimentos Andinos Cía. Ltda. · RUC 1791234567001')
+    && largoText.includes('Erradicación de violencia, acoso y no discriminación'),
+    largoText.slice(0, 400) + ' pages=' + largoPages);
+
   const failed = results.filter(r => !r.ok);
   console.log('\n' + results.filter(r => r.ok).length + '/' + results.length + ' checks');
   child.kill();
