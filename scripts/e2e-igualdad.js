@@ -175,16 +175,47 @@ async function main() {
 
   const pdf = await pub('/api/igualdad/' + pedro.token + '/certificado.pdf');
   const pdfText = decodePdfText(pdf.buf);
-  check('PDF del certificado', pdf.status === 200 && pdf.buf.slice(0, 4).toString() === '%PDF' && pdfText.includes('Alimentos Andinos') && pdfText.includes('Pedro Prueba') && pdfText.includes('40 horas') && pdfText.includes('Consultoría'), pdfText.slice(0, 180));
+  const pdfRaw = pdf.buf.toString('latin1');
+  const pages = (pdfRaw.match(/\/Type\s*\/Page[^s]/g) || []).length;
+  check('PDF del certificado', pdf.status === 200 && pdf.buf.slice(0, 4).toString() === '%PDF' && pages === 1
+    && /\/MediaBox\s*\[\s*0\s+0\s+841\.89\s+595\.2/.test(pdfRaw)
+    && pdfText.includes('Alimentos Andinos') && pdfText.includes('Pedro Prueba') && pdfText.includes('1710034065')
+    && pdfText.includes('Supervisor de bodega') && pdfText.includes('1791234567001')
+    && pdfText.includes('40 horas lectivas') && pdfText.includes('Consultoría')
+    && pdfText.includes('Glenda Sanchez') && pdfText.includes('Representante Legal')
+    && pdfText.includes('EMITIDO POR CONSULTORÍA SÁNCHEZ LA MANÁ')
+    && pdfText.includes('LEY ORGÁNICA PARA LA IGUALDAD SALARIAL')
+    && pdfText.includes('MDT-2025-006') && pdfText.includes('40 HORAS') && pdfText.includes('APROBADO'),
+    pdfText.slice(0, 400) + ' pages=' + pages);
   const ver = await pub('/api/verificar/' + code);
-  check('verificación pública', ver.json.valid === true && ver.json.empresa.includes('Alimentos') && ver.json.horas === 40 && ver.json.cedula.includes('•'));
+  check('verificación pública', ver.json.valid === true
+    && ver.json.trabajador === 'Pedro Prueba'
+    && ver.json.cedula === '1710034065'
+    && ver.json.cargo === 'Supervisor de bodega'
+    && ver.json.empresa.includes('Alimentos Andinos')
+    && ver.json.ruc === '1791234567001'
+    && ver.json.programa === 'Ley Orgánica para la Igualdad Salarial'
+    && ver.json.horas === 40
+    && ver.json.estado === 'APROBADO'
+    && ver.json.nota === 100
+    && ver.json.fechaAprobacion
+    && ver.json.fechaEmision
+    && ver.json.code === code
+    && ver.json.aprobadoPor === 'Aprobado por: Glenda Sanchez – Representante Legal, Consultoría Sánchez La Maná',
+    JSON.stringify(ver.json));
+  const page = await pub('/verificar/' + code);
+  check('página de verificación', page.status === 200 && page.text.includes('Fecha de aprobación') && page.text.includes('Aprobado por: Glenda Sanchez') && page.text.includes('d.cedula') && page.text.includes('d.fechaEmision'));
+  const qr = await pub('/api/verificar/' + code + '/qr.png');
+  check('QR del certificado', qr.status === 200 && qr.buf.slice(0, 8).toString('hex') === '89504e470d0a1a0a');
 
   const fail = await admin('/api/admin/igualdad/workers/' + pedro.id + '/recalificar', { body: { eval_key: 'final', score: 40, passed: false, comment: 'Recálculo de prueba' } });
   check('recálculo reprobado', fail.status === 200 && fail.json.certificado === null);
   const verOff = await pub('/api/verificar/' + code.toLowerCase());
   check('el código deja de verificar', verOff.json.valid === false);
   const back = await admin('/api/admin/igualdad/workers/' + pedro.id + '/recalificar', { body: { eval_key: 'final', score: 90, passed: true, comment: 'Vuelve a aprobar' } });
-  check('recálculo aprobado devuelve certificado', back.status === 200 && back.json.certificado);
+  check('recálculo aprobado devuelve certificado', back.status === 200 && back.json.certificado && back.json.certificado !== code);
+  const verBack = await pub('/api/verificar/' + back.json.certificado);
+  check('nota del recálculo en la verificación', verBack.json.valid === true && verBack.json.nota === 90 && verBack.json.cedula === '1710034065' && verBack.json.estado === 'APROBADO' && verBack.json.fechaAprobacion, JSON.stringify(verBack.json));
 
   const xls = await admin('/api/admin/igualdad/companies/' + companyId + '/reporte.xlsx');
   const wb = new ExcelJS.Workbook();
