@@ -42,7 +42,7 @@ function diploma(inner){
   </dl>
   <div class="diploma-end">
     <div class="cert-sign">${firmaHtml(d.aprobadoPor)}</div>
-    <div class="diploma-qr"><img src="/api/verificar/${esc(d.code)}/qr.png" alt="Código QR"><b>${esc(d.code)}</b></div>
-  </div>`);
+  </div>
+  <p class="diploma-code">${esc(d.code)}</p>`);
 })();
 </script></body></html>

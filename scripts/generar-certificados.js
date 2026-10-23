@@ -19,7 +19,7 @@ Escribe un PDF por persona e indice.csv en --out. Cada código CSLM- queda en la
   --periodo   año del certificado. Por defecto 2025.
   --fecha     aprobación y emisión, dentro de ese año. Por defecto el 15 de diciembre.
   --db        base SQLite. Por defecto DB_PATH o ./data.db.
-  --base      origen del código QR. Por defecto PUBLIC_URL o http://localhost:3000.
+  --base      se acepta por compatibilidad. El PDF muestra el código CSLM-, que se consulta en /verificar/CODIGO.
 `;
 
 function arg(name) {

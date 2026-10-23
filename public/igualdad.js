@@ -113,8 +113,8 @@ function certHtml() {
       <p class="diploma-facts"><b>Trabajador(a) de la empresa: ${esc(e.razon_social)} · RUC ${esc(e.ruc)}</b><br>Período ${esc(c.periodo || c.anio)} · ${nota}Aprobado el ${esc(c.fechaAprobacion || c.fecha)} · Emitido el ${esc(c.fechaEmision || c.fecha)}</p>
       <div class="diploma-end">
         <div class="cert-sign"><p class="name">Mgs. Glenda Sánchez Sigcha</p><p class="role">Capacitadora</p><p class="firm">Consultoría Sánchez</p></div>
-        <div class="diploma-qr"><img src="/api/verificar/${esc(c.code)}/qr.png" alt="Código QR"><b>${esc(c.code)}</b></div>
       </div>
+      <p class="diploma-code">${esc(c.code)}</p>
       <p class="diploma-issued">Emitido por Consultoría Sánchez</p>
       <p class="diploma-law">Referencia normativa: Acuerdo Ministerial MDT-2025-006.</p>
     </div>

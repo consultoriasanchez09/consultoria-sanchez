@@ -83,20 +83,18 @@ table.t{width:100%;border-collapse:collapse;font-size:.95rem}table.t td,table.t 
 .diploma-temas li{padding-left:12px;position:relative;font-size:.9rem}
 .diploma-temas li::before{content:"";position:absolute;left:0;top:.55em;width:6px;height:6px;background:#C4A35A;transform:rotate(45deg)}
 .diploma-facts{font-size:.9rem}
-.diploma-end{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;text-align:left;margin-top:18px}
-.cert-sign{border-top:1px solid #C4A35A;padding-top:8px;min-width:210px}
+.diploma-end{display:flex;justify-content:center;margin-top:22px}
+.cert-sign{border-top:1px solid #C4A35A;padding-top:8px;width:min(280px,100%);text-align:center}
 .cert-sign .name{font-family:Georgia,"Times New Roman",serif;font-style:italic;font-size:1.05rem;color:var(--navy);margin:0;line-height:1.25}
 .cert-sign .role{margin:0;color:var(--azul-osc);font-weight:800;font-size:.78rem}
 .cert-sign .firm{margin:0;font-size:.78rem}
-.diploma-qr{text-align:center}
-.diploma-qr img{width:68px;height:68px}
-.diploma-qr b{display:block;font-size:.75rem;color:var(--navy);letter-spacing:.02em}
-.diploma-issued{font-family:Georgia,"Times New Roman",serif;font-weight:700;color:var(--navy);margin:16px 0 0}
+.diploma-code{margin:14px 0 0;font-size:.72rem;font-weight:700;letter-spacing:.06em;color:var(--navy)}
+.diploma-issued{font-family:Georgia,"Times New Roman",serif;font-weight:700;color:var(--navy);margin:8px 0 0}
 .diploma-law{font-size:.8rem;margin-top:2px}
 .vgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;margin:12px auto;text-align:left;max-width:520px}
 .vgrid div{border-bottom:1px solid #e7d7a2;padding-bottom:4px}
 .vgrid dt{font-size:.7rem;letter-spacing:.04em;text-transform:uppercase;color:#5b6b7b}
 .vgrid dd{margin:1px 0 0;font-weight:700;color:var(--navy)}
-@media(max-width:640px){.diploma-temas,.vgrid,.diploma-end{grid-template-columns:1fr;display:grid}.diploma-name{font-size:1.55rem}}
+@media(max-width:640px){.diploma-temas,.vgrid{grid-template-columns:1fr}.diploma-name{font-size:1.55rem}}
 .lock{opacity:.55}
 .side .sec{margin:8px 10px 4px;font-size:.75rem;letter-spacing:.04em;color:#5b6b7b;text-transform:uppercase}

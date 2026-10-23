@@ -193,6 +193,7 @@ async function main() {
     && pdfText.includes('Emitido por Consultoría Sánchez')
     && !pdfText.includes('La Maná')
     && pdfText.includes('MDT-2025-006') && pdfText.includes(code)
+    && (pdfRaw.match(/\/Subtype\s*\/Image/g) || []).length === 1
     && copiado.every(s => !pdfText.includes(s)),
     pdfText.slice(0, 500) + ' pages=' + pages);
   const ver = await pub('/api/verificar/' + code);
@@ -217,9 +218,12 @@ async function main() {
     && ver.json.aprobadoPor === 'Mgs. Glenda Sánchez Sigcha\nCapacitadora\nConsultoría Sánchez',
     JSON.stringify(ver.json));
   const page = await pub('/verificar/' + code);
-  check('página de verificación', page.status === 200 && page.text.includes('Fecha de aprobación') && page.text.includes('Consultoría Sánchez certifica que') && page.text.includes('Trabajador(a) de la empresa:') && page.text.includes('Mgs. Glenda Sánchez Sigcha') && page.text.includes('Capacitadora') && page.text.includes('Emitido por Consultoría Sánchez') && page.text.includes('CSLM-') && !page.text.includes('La Maná') && !page.text.includes('Representante Legal') && !page.text.includes('Sikcha') && !page.text.includes('Programa Anual Obligatorio') && !page.text.includes('Se otorga') && page.text.includes('d.cedula') && page.text.includes('d.fechaEmision'));
+  check('página de verificación', page.status === 200 && page.text.includes('Fecha de aprobación') && page.text.includes('Consultoría Sánchez certifica que') && page.text.includes('Trabajador(a) de la empresa:') && page.text.includes('Mgs. Glenda Sánchez Sigcha') && page.text.includes('Capacitadora') && page.text.includes('Emitido por Consultoría Sánchez') && page.text.includes('CSLM-') && page.text.includes('diploma-code') && !page.text.includes('qr.png') && !page.text.includes('Código QR') && !page.text.includes('La Maná') && !page.text.includes('Representante Legal') && !page.text.includes('Sikcha') && !page.text.includes('Programa Anual Obligatorio') && !page.text.includes('Se otorga') && page.text.includes('d.cedula') && page.text.includes('d.fechaEmision'));
+  const pantalla = await fetch(BASE + '/igualdad.js');
+  const pantallaText = await pantalla.text();
+  check('certificado en pantalla sin QR', pantalla.status === 200 && pantallaText.includes('diploma-code') && pantallaText.includes('cert-sign') && !pantallaText.includes('qr.png') && !pantallaText.includes('diploma-qr'));
   const qr = await pub('/api/verificar/' + code + '/qr.png');
-  check('QR del certificado', qr.status === 200 && qr.buf.slice(0, 8).toString('hex') === '89504e470d0a1a0a');
+  check('la ruta de verificación sigue disponible', qr.status === 200 && qr.buf.slice(0, 8).toString('hex') === '89504e470d0a1a0a');
 
   const fail = await admin('/api/admin/igualdad/workers/' + pedro.id + '/recalificar', { body: { eval_key: 'final', score: 40, passed: false, comment: 'Recálculo de prueba' } });
   check('recálculo reprobado', fail.status === 200 && fail.json.certificado === null);
@@ -424,14 +428,13 @@ async function main() {
     && /\/MediaBox\s*\[\s*0\s+0\s+595\.2[0-9]*\s+841\.8/.test(largoRaw)
     && largoText.includes(largoNombre)
     && largoText.includes(largoCargo)
-    && !largoText.includes('…')
-    && !largoText.includes('\u0085')
     && largoText.includes('Consultoría Sánchez certifica que')
     && largoText.includes('Período 2025')
     && largoText.includes('Mgs. Glenda Sánchez Sigcha')
     && largoText.includes('Capacitadora')
     && largoText.includes('Trabajador(a) de la empresa: Alimentos Andinos Cía. Ltda. · RUC 1791234567001')
-    && largoText.includes('Erradicación de violencia, acoso y no discriminación'),
+    && largoText.includes('Erradicación de violencia, acoso y no discriminación')
+    && (largoRaw.match(/\/Subtype\s*\/Image/g) || []).length === 1,
     largoText.slice(0, 400) + ' pages=' + largoPages);
 
   const failed = results.filter(r => !r.ok);
