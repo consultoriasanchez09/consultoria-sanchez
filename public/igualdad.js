@@ -91,34 +91,34 @@ function certHtml() {
   const c = state.certificate;
   const w = state.worker;
   const e = state.company;
-  const anio = c.anio || (String(c.fecha || '').match(/(\d{4})\s*$/) || [])[1] || '';
-  const mods = [
-    ['#5B4B8A', 'MÓDULO 1 · 10 H', 'Derechos Laborales de Mujeres y Hombres', 'Art. 79 CT · Maternidad & IESS'],
-    ['#0B5C8A', 'MÓDULO 2 · 10 H', 'Igualdad de Género y Brecha Salarial', 'Arts. 11.2, 331 CRE · Sesgos'],
-    ['#C47B2B', 'MÓDULO 3 · 10 H', 'Erradicación de Violencia y No Discriminación', 'Convenio 190 OIT · Protocolos'],
-    ['#1B7A4E', 'MÓDULO 4 · 10 H', 'Trabajo de Igual Valor e Igualdad Salarial', 'Convenio 100 OIT · Metodología']
-  ].map(([color, k, title, ref]) => `<article class="cert-mod" style="--c:${color}"><b>${esc(k)}</b><strong>${esc(title)}</strong><span>${esc(ref)}</span></article>`).join('');
-  return `<div class="cert-sheet">
-    <div class="cert-top">
-      <div class="cert-brand"><img src="/img/logo.png" alt=""><div><b>Consultoría Sánchez</b><span>La Maná · Capacitación laboral y de género</span></div></div>
-      <div class="cert-badge">ART. 3 ACUERDO MINISTERIAL MDT-2025-006</div>
+  const temas = [
+    'Derechos laborales de mujeres y hombres',
+    'Igualdad de género y brecha salarial',
+    'Erradicación de violencia, acoso y no discriminación',
+    'Trabajo de igual valor e igualdad salarial'
+  ];
+  const nota = c.nota == null ? '' : `Nota final ${esc(c.nota)} % · `;
+  return `<article class="diploma">
+    <div class="diploma-band"><span>Consultoría Sánchez · La Maná</span></div>
+    <div class="diploma-body">
+      <img src="/img/logo.png" alt="">
+      <p class="diploma-firm">Consultoría Sánchez La Maná</p>
+      <p class="diploma-place">Capacitación laboral y de género · La Maná, Cotopaxi</p>
+      <p class="diploma-says">Consultoría Sánchez La Maná certifica que</p>
+      <p class="diploma-name">${esc(w.nombre)}</p>
+      <p class="diploma-meta">C.I. ${esc(w.cedula)} · ${esc(w.cargo)}</p>
+      <p class="diploma-text">aprobó el curso de capacitación Igualdad Salarial y No Discriminación, con una duración de 40 horas académicas.</p>
+      <p class="diploma-label">Temas del curso</p>
+      <ul class="diploma-temas">${temas.map(t => `<li>${esc(t)}</li>`).join('')}</ul>
+      <p class="diploma-facts"><b>${esc(e.razon_social)}</b> · RUC ${esc(e.ruc)}<br>${nota}Aprobado el ${esc(c.fechaAprobacion || c.fecha)} · Emitido el ${esc(c.fecha)}</p>
+      <div class="diploma-end">
+        <div class="cert-sign"><p class="name">Mgs. Glenda Sánchez Sigcha</p><p class="role">Capacitadora</p><p class="firm">Consultoría Sánchez</p></div>
+        <div class="diploma-qr"><img src="/api/verificar/${esc(c.code)}/qr.png" alt="Código QR"><b>${esc(c.code)}</b></div>
+      </div>
+      <p class="diploma-issued">Emitido por Consultoría Sánchez La Maná</p>
+      <p class="diploma-law">Referencia normativa: Acuerdo Ministerial MDT-2025-006.</p>
     </div>
-    <p class="cert-eye">CERTIFICADO DE CAPACITACIÓN ANUAL</p>
-    <h2>LEY ORGÁNICA PARA LA IGUALDAD SALARIAL</h2>
-    <p class="lead">Programa Anual Obligatorio de 40 Horas Académicas · Acuerdo Ministerial MDT-2025-006</p>
-    <p class="grant">SE OTORGA EL PRESENTE RECONOCIMIENTO A:</p>
-    <p class="who">${esc(w.nombre)}</p>
-    <p class="meta">C.I.: ${esc(w.cedula)} · Cargo: ${esc(w.cargo)} · Empresa: ${esc(e.razon_social)} · RUC: ${esc(e.ruc)}</p>
-    <p class="lead">Por haber completado y aprobado satisfactoriamente los 4 ejes curriculares obligatorios (40 horas lectivas):</p>
-    <div class="cert-mods">${mods}</div>
-    <div class="cert-bottom">
-      <div class="cert-sign"><p class="name">Mgs. Glenda Sánchez Sigcha</p><p class="role">Capacitadora</p><p class="firm">Consultoría Sánchez</p></div>
-      <div class="cert-seal"><b>40 HORAS</b><em>APROBADO</em><span>PERÍODO ${esc(anio)}</span></div>
-      <div class="cert-verify"><img src="/api/verificar/${esc(c.code)}/qr.png" alt="Código QR de verificación"><div><p><b>VERIFICACIÓN DIGITAL</b></p><p>ID Certificado<br><b>${esc(c.code)}</b></p><p>Emisión: ${esc(c.fecha)}</p><p><a href="/verificar/${esc(c.code)}">Registro electrónico verificable</a></p></div></div>
-    </div>
-    <p class="cert-issued">EMITIDO POR CONSULTORÍA SÁNCHEZ LA MANÁ</p>
-    <p class="cert-issued-sub">Evidencia de la capacitación para inspecciones del Ministerio del Trabajo · La Maná, Cotopaxi</p>
-  </div>
+  </article>
   <p style="margin-top:14px"><a class="btn btn-aula" href="/api/igualdad/${encodeURIComponent(token)}/certificado.pdf" target="_blank" rel="noopener">Ver / imprimir PDF</a></p>`;
 }
 

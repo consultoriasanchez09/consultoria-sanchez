@@ -170,23 +170,27 @@ async function main() {
   check('final desbloqueada', st.json.final.unlocked === true, JSON.stringify({ hours: st.json.hours, mods: st.json.modules.map(m => ({ id: m.id, ev: m.evaluacion.estado, lec: m.lectura.status, tal: m.taller.status })) }));
   st = await pub('/api/igualdad/' + pedro.token + '/final', { body: { answers: finalAnswers } });
   check('prueba final aprobada y 40 h', st.json.final.passed && st.json.hours.total === 40 && st.json.eligible, JSON.stringify(st.json.hours));
-  check('certificado con empresa y código', st.json.certificate && st.json.certificate.code.startsWith('CSIG-') , JSON.stringify(st.json.certificate));
+  check('certificado con empresa y código', st.json.certificate && st.json.certificate.code.startsWith('CSLM-') , JSON.stringify(st.json.certificate));
   const code = st.json.certificate.code;
 
   const pdf = await pub('/api/igualdad/' + pedro.token + '/certificado.pdf');
   const pdfText = decodePdfText(pdf.buf);
   const pdfRaw = pdf.buf.toString('latin1');
   const pages = (pdfRaw.match(/\/Type\s*\/Page[^s]/g) || []).length;
+  const copiado = ['Se otorga el presente reconocimiento', 'Programa Anual Obligatorio', 'Expediente electrónico', 'VERIFICACIÓN DIGITAL', '40 HORAS', 'AMU-', 'CSIG-'];
   check('PDF del certificado', pdf.status === 200 && pdf.buf.slice(0, 4).toString() === '%PDF' && pages === 1
-    && /\/MediaBox\s*\[\s*0\s+0\s+841\.89\s+595\.2/.test(pdfRaw)
+    && /\/MediaBox\s*\[\s*0\s+0\s+595\.2[0-9]*\s+841\.8/.test(pdfRaw)
     && pdfText.includes('Alimentos Andinos') && pdfText.includes('Pedro Prueba') && pdfText.includes('1710034065')
     && pdfText.includes('Supervisor de bodega') && pdfText.includes('1791234567001')
-    && pdfText.includes('40 horas lectivas') && pdfText.includes('Consultoría')
+    && pdfText.includes('Consultoría Sánchez La Maná certifica que')
+    && pdfText.includes('aprobó el curso de capacitación Igualdad Salarial y No Discriminación, con una duración de 40 horas académicas.')
+    && pdfText.includes('brecha salarial') && pdfText.includes('igual valor')
+    && pdfText.includes('Nota final 100 %') && pdfText.includes('Aprobado el') && pdfText.includes('Emitido el')
     && pdfText.includes('Mgs. Glenda Sánchez Sigcha') && pdfText.includes('Capacitadora') && !pdfText.includes('Representante Legal') && !pdfText.includes('Sikcha')
-    && pdfText.includes('EMITIDO POR CONSULTORÍA SÁNCHEZ LA MANÁ')
-    && pdfText.includes('LEY ORGÁNICA PARA LA IGUALDAD SALARIAL')
-    && pdfText.includes('MDT-2025-006') && pdfText.includes('40 HORAS') && pdfText.includes('APROBADO'),
-    pdfText.slice(0, 400) + ' pages=' + pages);
+    && pdfText.includes('Emitido por Consultoría Sánchez La Maná')
+    && pdfText.includes('MDT-2025-006') && pdfText.includes(code)
+    && copiado.every(s => !pdfText.includes(s)),
+    pdfText.slice(0, 500) + ' pages=' + pages);
   const ver = await pub('/api/verificar/' + code);
   check('verificación pública', ver.json.valid === true
     && ver.json.trabajador === 'Pedro Prueba'
@@ -194,7 +198,9 @@ async function main() {
     && ver.json.cargo === 'Supervisor de bodega'
     && ver.json.empresa.includes('Alimentos Andinos')
     && ver.json.ruc === '1791234567001'
-    && ver.json.programa === 'Ley Orgánica para la Igualdad Salarial'
+    && ver.json.programa === 'Igualdad Salarial y No Discriminación'
+    && ver.json.code.startsWith('CSLM-')
+    && Array.isArray(ver.json.temas) && ver.json.temas.length === 4
     && ver.json.horas === 40
     && ver.json.estado === 'APROBADO'
     && ver.json.nota === 100
@@ -204,7 +210,7 @@ async function main() {
     && ver.json.aprobadoPor === 'Mgs. Glenda Sánchez Sigcha\nCapacitadora\nConsultoría Sánchez',
     JSON.stringify(ver.json));
   const page = await pub('/verificar/' + code);
-  check('página de verificación', page.status === 200 && page.text.includes('Fecha de aprobación') && page.text.includes('Mgs. Glenda Sánchez Sigcha') && page.text.includes('Capacitadora') && page.text.includes('Consultoría Sánchez') && !page.text.includes('Representante Legal') && !page.text.includes('Sikcha') && page.text.includes('d.cedula') && page.text.includes('d.fechaEmision'));
+  check('página de verificación', page.status === 200 && page.text.includes('Fecha de aprobación') && page.text.includes('Consultoría Sánchez La Maná certifica que') && page.text.includes('Mgs. Glenda Sánchez Sigcha') && page.text.includes('Capacitadora') && page.text.includes('Emitido por Consultoría Sánchez La Maná') && page.text.includes('CSLM-') && !page.text.includes('Representante Legal') && !page.text.includes('Sikcha') && !page.text.includes('Programa Anual Obligatorio') && !page.text.includes('Se otorga') && page.text.includes('d.cedula') && page.text.includes('d.fechaEmision'));
   const qr = await pub('/api/verificar/' + code + '/qr.png');
   check('QR del certificado', qr.status === 200 && qr.buf.slice(0, 8).toString('hex') === '89504e470d0a1a0a');
 

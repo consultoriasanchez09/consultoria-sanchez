@@ -5,33 +5,43 @@
 <script src="/common.js"></script><script>
 const code=(location.pathname.split('/').filter(Boolean)[1]||'').toUpperCase();
 const root=document.getElementById('root');
-function shell(inner){
-  return `<div class="vpage"><header><div class="who"><img src="/img/logo.png" alt=""><div><b>Consultoría Sánchez</b><span>La Maná · Capacitación laboral y de género</span></div></div><div class="cert-badge">ART. 3 · MDT-2025-006</div></header>${inner}<p class="vfoot">EMITIDO POR CONSULTORÍA SÁNCHEZ LA MANÁ</p><p class="cert-issued-sub">Evidencia de la capacitación para inspecciones del Ministerio del Trabajo · La Maná, Cotopaxi</p></div><p class="banner-test">Versión de prueba. Esta consulta confirma el certificado en la plataforma. No reemplaza el reporte oficial ante el Ministerio del Trabajo.</p>`;
+function firmaHtml(texto){
+  return String(texto||'Mgs. Glenda Sánchez Sigcha\nCapacitadora\nConsultoría Sánchez').split('\n').map(function(linea,i){
+    return '<span class="'+(['name','role','firm'][i]||'firm')+'">'+esc(linea)+'</span>';
+  }).join('');
+}
+function diploma(inner){
+  return `<article class="diploma"><div class="diploma-band"><span>Consultoría Sánchez · La Maná</span></div><div class="diploma-body">${inner}<p class="diploma-issued">Emitido por Consultoría Sánchez La Maná</p><p class="diploma-law">Referencia normativa: Acuerdo Ministerial MDT-2025-006.</p></div></article><p class="banner-test">Versión de prueba. Esta consulta confirma el certificado en la plataforma. No reemplaza el reporte oficial ante el Ministerio del Trabajo.</p>`;
 }
 (async()=>{
- if(!code){root.innerHTML=shell('<h1>Verificar certificado</h1><p class="lead" style="text-align:center">Indique el código en la dirección, por ejemplo /verificar/CSIG-XXXXXXXX.</p>');return}
- let d;try{d=await api('/api/verificar/'+encodeURIComponent(code))}catch(e){root.innerHTML=shell('<h1>No se pudo consultar</h1><p class="err">'+esc(e.message)+'</p>');return}
- if(!d.valid){root.innerHTML=shell(`<h1>Certificado no vigente</h1><p class="lead" style="text-align:center">El código <b>${esc(code)}</b> no corresponde a un certificado activo. Puede haberse retirado porque una evaluación dejó de estar aprobada, o el código no existe.</p>`);return}
- const nota=d.nota==null?'':` · Nota ${esc(d.nota)} %`;
+ if(!code){root.innerHTML=diploma('<img src="/img/logo.png" alt=""><p class="diploma-firm">Consultoría Sánchez La Maná</p><h1 class="diploma-name">Verificar certificado</h1><p class="diploma-text">Indique el código en la dirección, por ejemplo /verificar/CSLM-XXXXXXXX.</p>');return}
+ let d;try{d=await api('/api/verificar/'+encodeURIComponent(code))}catch(e){root.innerHTML=diploma('<h1 class="diploma-name">No se pudo consultar</h1><p class="err">'+esc(e.message)+'</p>');return}
+ if(!d.valid){root.innerHTML=diploma(`<img src="/img/logo.png" alt=""><p class="diploma-firm">Consultoría Sánchez La Maná</p><h1 class="diploma-name">Certificado no vigente</h1><p class="diploma-text">El código <b>${esc(code)}</b> no corresponde a un certificado activo. Puede haberse retirado porque una evaluación dejó de estar aprobada, o el código no existe.</p>`);return}
+ const temas=(d.temas&&d.temas.length?d.temas:['Derechos laborales de mujeres y hombres','Igualdad de género y brecha salarial','Erradicación de violencia, acoso y no discriminación','Trabajo de igual valor e igualdad salarial']).map(t=>'<li>'+esc(t)+'</li>').join('');
  const fila=(t,v)=>`<div><dt>${t}</dt><dd>${esc(v)}</dd></div>`;
- root.innerHTML=shell(`
-  <p class="cert-eye">VERIFICACIÓN DE CERTIFICADO</p>
-  <h1>${esc(d.trabajador)}</h1>
-  <p class="vstatus">${esc(d.estado || 'APROBADO')}${nota}</p>
-  <div class="vcourse"><span>Programa</span><strong>${esc(d.programa)}</strong><em>${esc(d.programaDetalle || '')}</em></div>
+ root.innerHTML=diploma(`
+  <img src="/img/logo.png" alt="">
+  <p class="diploma-firm">Consultoría Sánchez La Maná</p>
+  <p class="diploma-place">Capacitación laboral y de género · La Maná, Cotopaxi</p>
+  <p class="diploma-says">Consultoría Sánchez La Maná certifica que</p>
+  <h1 class="diploma-name">${esc(d.trabajador)}</h1>
+  <p class="diploma-meta">C.I. ${esc(d.cedula)} · ${esc(d.cargo)}</p>
+  <p class="diploma-text">aprobó el curso de capacitación ${esc(d.programa)}, con una duración de ${esc(d.horas)} horas académicas.</p>
+  <p class="diploma-label">Temas del curso</p>
+  <ul class="diploma-temas">${temas}</ul>
   <dl class="vgrid">
-    ${fila('C.I.', d.cedula)}
-    ${fila('Cargo', d.cargo)}
     ${fila('Empresa', d.empresa)}
     ${fila('RUC', d.ruc)}
-    ${fila('Horas', (d.horas ?? 40) + ' horas académicas')}
     ${fila('Estado', d.estado || 'APROBADO')}
     ${fila('Nota final', d.nota==null ? '—' : d.nota + ' %')}
     ${fila('Fecha de aprobación', d.fechaAprobacion)}
-    ${fila('ID del certificado', d.code)}
     ${fila('Fecha de emisión', d.fechaEmision || d.fecha)}
+    ${fila('Código', d.code)}
+    ${fila('Horas', (d.horas ?? 40) + ' horas académicas')}
   </dl>
-  <p class="vwho">${String(d.aprobadoPor || 'Mgs. Glenda Sánchez Sigcha\nCapacitadora\nConsultoría Sánchez').split('\n').map(function(linea, i){return '<span class="' + (['name','role','firm'][i] || 'firm') + '">' + esc(linea) + '</span>';}).join('')}</p>
-  <div class="cert-verify vqr"><img src="/api/verificar/${esc(d.code)}/qr.png" alt="Código QR de este certificado"><div><p><b>Registro electrónico</b></p><p>El código de este certificado es <b>${esc(d.code)}</b>. La emisión es el ${esc(d.fechaEmision || d.fecha)}.</p></div></div>`);
+  <div class="diploma-end">
+    <div class="cert-sign">${firmaHtml(d.aprobadoPor)}</div>
+    <div class="diploma-qr"><img src="/api/verificar/${esc(d.code)}/qr.png" alt="Código QR"><b>${esc(d.code)}</b></div>
+  </div>`);
 })();
 </script></body></html>
