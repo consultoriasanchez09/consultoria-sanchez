@@ -26,13 +26,33 @@ test('cédula y RUC ecuatorianos', () => {
 
 test('el plan de cuentas tiene padre y las cuentas de enlace existen', () => {
   const codes = new Set(CHART.map((a) => a.code));
+  const byCode = new Map(CHART.map((a) => [a.code, a]));
   for (const account of CHART) {
     const parent = parentCode(account.code);
-    if (parent) assert.equal(codes.has(parent), true, parent);
+    if (parent) assert.equal(codes.has(parent), true, account.code);
+    const hasChildren = CHART.some((other) => other.code.startsWith(account.code + '.'));
+    assert.equal(Boolean(account.isMovement), !hasChildren, account.code);
+    if (hasChildren) assert.equal(byCode.get(account.code).isMovement, 0);
   }
   for (const [key, value] of Object.entries(DEFAULT_SETTINGS)) {
-    if (key.startsWith('cuenta_')) assert.equal(codes.has(value), true, key);
+    if (!key.startsWith('cuenta_')) continue;
+    assert.equal(codes.has(value), true, key);
+    assert.equal(byCode.get(value).isMovement, 1, key);
   }
+  assert.equal(byCode.get('2.1.4.01.01').name, 'IVA 15% VENTAS LOCALES');
+  assert.equal(byCode.get('4.1.1.01').name, 'VENTAS GRAVADAS TARIFA 15%');
+  assert.equal(byCode.get('5.1.1.01').name, 'COSTO MERCADERIA TARIFA 15%');
+  assert.equal(byCode.get('3.1.6.01').name, 'RESULTADOS DEL EJERCICIO');
+  assert.equal(byCode.get('2.1.9.01.01').name, 'ANTICIPO DE CLIENTES');
+  assert.equal(byCode.get('2.1.2.01.04').name, 'BANCO PICHINCHA');
+  assert.equal(byCode.get('2.1.2.02.01').name.includes('EXTERIOR'), true);
+  assert.equal(CHART.some((a) => /12\s*%|12%/.test(a.name)), false);
+  assert.equal(CHART.some((a) => /INTERNACICONAL|OFICNA|INTAGIBLES|GANACIAS|SUMINSITROS|ARRIENDAMIENTO|SOCIO ABC|SOCIO DEF|\*/.test(a.name)), false);
+  assert.equal(CHART.some((a) => a.code === '2.1.6.01.04'), false);
+  assert.equal(CHART.some((a) => a.code === '5.2.1.03.02' && /FONDO/.test(a.name)), false);
+  assert.equal(byCode.get('2.1.4.03.12').name.includes('(343)'), true);
+  assert.equal(byCode.get('2.2.2.01.01').name, 'JUBILACIÓN PATRONAL');
+  assert.equal(byCode.get('5.3.1.01.02').name, 'IMPUESTO A LA RENTA CORRIENTE');
 });
 
 test('IVA 15% y 0% por línea, con descuento e ICE', () => {

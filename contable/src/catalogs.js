@@ -13,18 +13,22 @@ const DOC_TYPES = {
 
 const RETENTION_CODES = [
   { code: '303', tax: 'RENTA', rate: 10, name: 'Honorarios profesionales' },
-  { code: '304', tax: 'RENTA', rate: 8, name: 'Servicios en los que predomina el intelecto' },
-  { code: '307', tax: 'RENTA', rate: 2, name: 'Servicios' },
-  { code: '309', tax: 'RENTA', rate: 1.75, name: 'Bienes muebles de naturaleza corporal' },
-  { code: '312', tax: 'RENTA', rate: 1.75, name: 'Transferencia de bienes muebles' },
-  { code: '320', tax: 'RENTA', rate: 1, name: 'Arrendamiento mercantil' },
-  { code: '332', tax: 'RENTA', rate: 2, name: 'Otras retenciones de renta' },
-  { code: '725', tax: 'IVA', rate: 30, name: 'Retención IVA 30%' },
-  { code: '727', tax: 'IVA', rate: 70, name: 'Retención IVA 70%' },
-  { code: '729', tax: 'IVA', rate: 100, name: 'Retención IVA 100%' },
+  { code: '304', tax: 'RENTA', rate: 10, name: 'Servicios en los que predomina el intelecto' },
+  { code: '307', tax: 'RENTA', rate: 3, name: 'Servicios en los que predomina la mano de obra' },
+  { code: '309', tax: 'RENTA', rate: 3, name: 'Promoción y publicidad' },
+  { code: '310', tax: 'RENTA', rate: 1, name: 'Servicio de transporte' },
+  { code: '311', tax: 'RENTA', rate: 3, name: 'Servicios mediante liquidación de compra' },
+  { code: '312', tax: 'RENTA', rate: 2, name: 'Transferencia de bienes muebles' },
+  { code: '320', tax: 'RENTA', rate: 10, name: 'Arrendamiento de bienes inmuebles' },
+  { code: '322', tax: 'RENTA', rate: 2, name: 'Seguros y reaseguros' },
+  { code: '343', tax: 'RENTA', rate: 1, name: 'Otras retenciones aplicables (RIMPE emprendedor)' },
+  { code: '344', tax: 'RENTA', rate: 2, name: 'Otras retenciones aplicables' },
   { code: '721', tax: 'IVA', rate: 10, name: 'Retención IVA 10%' },
   { code: '723', tax: 'IVA', rate: 20, name: 'Retención IVA 20%' },
-  { code: '731', tax: 'IVA', rate: 50, name: 'Retención IVA 50%' },
+  { code: '725', tax: 'IVA', rate: 30, name: 'Retención IVA 30%' },
+  { code: '727', tax: 'IVA', rate: 50, name: 'Retención IVA 50%' },
+  { code: '729', tax: 'IVA', rate: 70, name: 'Retención IVA 70%' },
+  { code: '731', tax: 'IVA', rate: 100, name: 'Retención IVA 100%' },
 ];
 
 const PAYMENT_METHODS = [

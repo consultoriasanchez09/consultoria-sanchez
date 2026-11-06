@@ -37,9 +37,9 @@ test('asientos, inventario, nómina, balance y respaldo', async () => {
   await postManualJournal({
     companyId, date: '2026-01-02', description: 'Apertura',
     lines: [
-      { code: '1.1.01.01', debitCents: 100000, creditCents: 0 },
-      { code: '1.1.03.01', debitCents: 50000, creditCents: 0 },
-      { code: '3.1.01.01', debitCents: 0, creditCents: 150000 },
+      { code: '1.1.1.01.01', debitCents: 100000, creditCents: 0 },
+      { code: '1.1.3.01.03', debitCents: 50000, creditCents: 0 },
+      { code: '3.1.1.01.01', debitCents: 0, creditCents: 150000 },
     ],
   });
   const purchase = await postDocument({

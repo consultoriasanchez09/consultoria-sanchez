@@ -1,7 +1,7 @@
 const { insert } = require('./db');
 const { db, isoNow } = require('./ctx');
 const { makeCedula, makeRucPrivada } = require('./ecuador');
-const { createUser, provisionCompany, saveParty, saveProduct, setInitialStock } = require('./company');
+const { createUser, provisionCompany, saveParty, saveProduct, setInitialStock, saveSettings } = require('./company');
 const { postDocument } = require('./posting');
 const { postManualJournal, closeYear } = require('./ledger');
 const { postBankAccount, postBankMovement, postSettlement } = require('./treasury');
@@ -85,15 +85,16 @@ async function seedComercial(userId) {
   await postManualJournal({
     companyId, userId, date: '2024-01-02', description: 'Asiento de apertura DEMO',
     lines: [
-      { code: '1.1.01.01', debitCents: caja, creditCents: 0 },
-      { code: '1.1.01.02', debitCents: bancos, creditCents: 0 },
-      { code: '1.1.03.01', debitCents: inventory, creditCents: 0 },
-      { code: '3.1.01.01', debitCents: 0, creditCents: caja + bancos + inventory },
+      { code: '1.1.1.01.01', debitCents: caja, creditCents: 0 },
+      { code: '1.1.1.02.04', debitCents: bancos, creditCents: 0 },
+      { code: '1.1.3.01.03', debitCents: inventory, creditCents: 0 },
+      { code: '3.1.1.01.01', debitCents: 0, creditCents: caja + bancos + inventory },
     ],
   });
+  await saveSettings(companyId, { cuenta_bancos: '1.1.1.02.04' });
   const bank = await postBankAccount({
     companyId, name: 'Cuenta corriente', bankName: 'Banco del Pacífico', accountNumber: '2100456789',
-    ledgerCode: '1.1.01.02', openingCents: bancos, openingDate: '2024-01-02',
+    ledgerCode: '1.1.1.02.04', openingCents: bancos, openingDate: '2024-01-02',
   });
 
   const history = {
@@ -113,11 +114,11 @@ async function seedComercial(userId) {
       });
       await postManualJournal({
         companyId, userId, date: `${year}-${pad(month)}-20`, description: `Declaración y pago de IVA ${pad(month)}/${year}`,
-        lines: [{ code: '2.1.02.01', debitCents: iva, creditCents: 0 }, { code: '1.1.01.01', debitCents: 0, creditCents: iva }],
+        lines: [{ code: '2.1.4.01.01', debitCents: iva, creditCents: 0 }, { code: '1.1.1.01.01', debitCents: 0, creditCents: iva }],
       });
       await postManualJournal({
         companyId, userId, date: `${year}-${pad(month)}-28`, description: `Arriendo ${pad(month)}/${year}`,
-        lines: [{ code: '5.2.02.01', debitCents: rent, creditCents: 0 }, { code: '1.1.01.01', debitCents: 0, creditCents: rent }],
+        lines: [{ code: '5.2.1.07.01', debitCents: rent, creditCents: 0 }, { code: '1.1.1.01.01', debitCents: 0, creditCents: rent }],
       });
     }
     await closeYear({ companyId, userId, year });
@@ -149,7 +150,7 @@ async function seedComercial(userId) {
       await postDocument({
         companyId, userId, docType: 'RET', date: '2026-06-03', partyId: molinos, relatedDocumentId: purchase.id,
         retentions: [
-          { tax: 'RENTA', code: '312', base: '1000.00', rate: 1.75 },
+          { tax: 'RENTA', code: '312', base: '1000.00', rate: 2 },
           { tax: 'IVA', code: '725', base: '150.00', rate: 30 },
         ],
       });
@@ -205,7 +206,7 @@ async function seedComercial(userId) {
   await postPayroll({ companyId, userId, year: 2026, month: 10 });
   await postBankMovement({
     companyId, userId, bankAccountId: bank.id, kind: 'CHEQUE', date: '2026-11-15', amountCents: 12500,
-    postdated: true, accountCode: '5.2.02.05', description: 'Cheque posfechado de suministros', reference: '004512',
+    postdated: true, accountCode: '5.2.1.15.01', description: 'Cheque posfechado de suministros', reference: '004512',
   });
   return companyId;
 }
@@ -214,7 +215,7 @@ async function rentFromBank(companyId, userId, bankId, month) {
   const date = `2026-${pad(month)}-27`;
   await postManualJournal({
     companyId, userId, date, description: `Arriendo local ${pad(month)}/2026`,
-    lines: [{ code: '5.2.02.01', debitCents: 35000, creditCents: 0 }, { code: '1.1.01.02', debitCents: 0, creditCents: 35000 }],
+    lines: [{ code: '5.2.1.07.01', debitCents: 35000, creditCents: 0 }, { code: '1.1.1.02.04', debitCents: 0, creditCents: 35000 }],
   });
   await insert('bank_movements', {
     company_id: companyId, bank_account_id: bankId, doc_date: date, kind: 'ND', doc_number: `ARR-${pad(month)}`,
@@ -246,14 +247,14 @@ async function seedServicios(userId) {
   await postManualJournal({
     companyId, userId, date: '2026-01-05', description: 'Apertura DEMO servicios',
     lines: [
-      { code: '1.1.01.01', debitCents: 50000, creditCents: 0 },
-      { code: '1.1.01.02', debitCents: 400000, creditCents: 0 },
-      { code: '3.1.01.01', debitCents: 0, creditCents: 450000 },
+      { code: '1.1.1.01.01', debitCents: 50000, creditCents: 0 },
+      { code: '1.1.1.02.01', debitCents: 400000, creditCents: 0 },
+      { code: '3.1.1.01.01', debitCents: 0, creditCents: 450000 },
     ],
   });
   const bank = await postBankAccount({
     companyId, name: 'Cuenta de ahorros', bankName: 'Banco Pichincha', accountNumber: '3300112233',
-    ledgerCode: '1.1.01.02', openingCents: 400000, openingDate: '2026-01-05',
+    ledgerCode: '1.1.1.02.01', openingCents: 400000, openingDate: '2026-01-05',
   });
   const months = [5, 6, 7, 8, 9, 10];
   const hours = [12, 18, 10, 20, 16, 14];
