@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Consultoría Sánchez · Contabilidad</title>
+<link rel="icon" href="logo.png">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="login" class="login">
+  <section class="login-brand">
+    <img src="logo.png" alt="Consultoría Sánchez">
+    <h1>Contabilidad de varias empresas, en un solo escritorio.</h1>
+    <p>Libros, impuestos y nómina para los clientes de la consultora. Cada empresa conserva sus propios saldos.</p>
+  </section>
+  <section class="login-card">
+    <h2>Entrar al sistema</h2>
+    <p class="muted">Prototipo de uso interno. Cambie las claves antes de cargar datos reales.</p>
+    <form id="login-form">
+      <label>Usuario<input name="username" autocomplete="username" required value="admin"></label>
+      <label>Contraseña<input name="password" type="password" autocomplete="current-password" required value="Consultora2026!"></label>
+      <button class="btn" type="submit">Ingresar</button>
+      <p id="login-error" class="error" hidden></p>
+    </form>
+    <div class="demo-box">
+      <strong>Accesos de demostración</strong>
+      <span>admin · Consultora2026!</span>
+      <span>auxiliar · Auxiliar2026!</span>
+      <span>consulta · Consulta2026!</span>
+    </div>
+  </section>
+</div>
+<div id="app" hidden>
+  <aside id="sidebar"></aside>
+  <div class="workspace">
+    <header class="topbar" id="topbar"></header>
+    <main id="view"></main>
+  </div>
+</div>
+<dialog id="modal"></dialog>
+<div id="toast" hidden></div>
+<script src="app.js"></script>
+</body>
+</html>
