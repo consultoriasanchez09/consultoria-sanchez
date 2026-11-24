@@ -37,7 +37,7 @@ const posters = {
       'Seleccionamos y ascendemos por méritos.',
       'Nunca pedimos pruebas de embarazo ni preguntamos sobre tu vida familiar.',
       '',
-      'Art. 11.2 y 331 Constitución · MDT-2017-082'
+      'Art. 11.2 y 331 Constitución · MDT-2025-102'
     ]
   }
 };
@@ -59,7 +59,7 @@ const politica = {
     ['Artículo 6. Tolerancia cero.-', 'Se prohíbe toda conducta de acoso laboral, acoso sexual, violencia o discriminación por sexo, género, orientación sexual, identidad de género, embarazo, maternidad, paternidad, edad, discapacidad, etnia, religión, condición migratoria o cualquier otra condición personal.'],
     ['Artículo 7. Canal de denuncia.-', 'Toda persona puede denunciar, de forma verbal o escrita y con garantía de confidencialidad, ante la unidad de Talento Humano o directamente ante el Representante Legal. La empresa investigará con imparcialidad y adoptará medidas en un plazo máximo de 15 días.'],
     ['Artículo 8. Prohibición de represalias.-', 'Se prohíbe cualquier represalia contra quien denuncie, testifique o reclame por desigualdad salarial, discriminación o acoso. La represalia se considera falta grave.'],
-    ['Artículo 9. Corresponsabilidad y cuidados.-', 'La empresa respeta y facilita las licencias de maternidad, paternidad y lactancia, y promueve la corresponsabilidad en las tareas de cuidado conforme al Convenio 156 de la OIT y la Ley de Economía Violeta.'],
+    ['Artículo 9. Corresponsabilidad y cuidados.-', 'La empresa respeta y facilita las licencias vigentes de maternidad, paternidad, lactancia y cuidado de hijas e hijos, conforme al Código del Trabajo y a la Ley Orgánica del Derecho al Cuidado Humano, y promueve la corresponsabilidad conforme al Convenio 156 de la OIT. Las licencias compartidas introducidas en 2023 no están vigentes.'],
     ['Artículo 10. Capacitación.-', 'Todo el personal, incluido el directorio y el representante legal, cumplirá al menos 40 horas anuales de capacitación en los ejes del Art. 3 del Acuerdo MDT-2025-006.'],
     ['Artículo 11. Sensibilización.-', 'La empresa ejecutará y documentará acciones periódicas de sensibilización (afiches, boletines, charlas, encuestas) sobre igualdad de género y no discriminación, conforme al Art. 4 del Acuerdo MDT-2025-006.'],
     ['Artículo 12. Sanciones.-', 'El incumplimiento de esta Política se sancionará conforme al Reglamento Interno de Trabajo y el Código del Trabajo, pudiendo constituir causal de visto bueno.'],
@@ -100,8 +100,9 @@ const instructivo = {
     'Imprimir los 3 afiches (archivos 1 a 3) en A4 o A3 y colocarlos en cartelera, comedor y recepción. Tomar una fotografía con fecha visible.',
     'Realizar una charla corta (15 a 30 minutos) para socializar la Política y el canal de denuncia; hacer firmar el Acta (archivo 5).',
     'Aplicar la Encuesta anónima (archivo 6) y conservar el resumen tabulado.',
-    'Registrar cada acción en la plataforma AMU (sección 4 · Sensibilización) con fecha, tipo y número de participantes: ese registro se exporta en el Excel que se reporta al Ministerio.',
-    'Guardar fotos, acta firmada y encuestas en una carpeta digital; en una inspección hay 10 días para presentarlas.'
+    'Registrar cada acción en esta plataforma, en Acciones Art. 4, con fecha, tipo, descripción y participantes reales. El Excel de apoyo ordena esa evidencia para el reporte en el Sistema Único de Trabajo (SUT).',
+    'Reportar en el SUT con el plazo correcto: las acciones de 2025, hasta el 30 de noviembre de 2026 (Acuerdo MDT-2025-185, prórroga por única vez); las acciones de 2026, en enero de 2027 (Art. 5 del MDT-2025-006). La veracidad de lo declarado es del empleador. La sensibilización no reemplaza las 40 horas ni, cuando aplica, el Plan de Igualdad.',
+    'Guardar fotos, acta firmada y encuestas en una carpeta digital, junto con la constancia descargada del SUT. El Excel no sustituye esa constancia.'
   ]
 };
 

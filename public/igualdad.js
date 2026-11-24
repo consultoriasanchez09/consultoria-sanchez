@@ -3,14 +3,19 @@ const token = (location.pathname.split('/').filter(Boolean)[1] || '');
 const fmt = n => Number(n).toLocaleString('es-EC', { maximumFractionDigits: 1 });
 
 function infoPage() {
-  root.innerHTML = `<section style="padding:28px 0 60px"><p class="banner-test">Versión de prueba · despliegue de ensayo. El reporte oficial de enero se presenta por el mecanismo del Ministerio del Trabajo.</p>
+  root.innerHTML = `<section style="padding:28px 0 60px">
   <h1 class="t">Capacitación Igualdad Salarial · 40 horas</h1>
-  <p class="sub">Módulo de Consultoría Sánchez, inspirado en el Acuerdo Ministerial MDT-2025-006. El texto, los casos y las evaluaciones son originales.</p>
+  <p class="sub">Curso de Consultoría Sánchez para el Art. 7 de la Ley Orgánica para la Igualdad Salarial entre Mujeres y Hombres y los Arts. 3 y 4 del Acuerdo Ministerial MDT-2025-006. Contenido normativo de 2026. Capacitadora: Mgs. Glenda Sánchez Sigcha.</p>
   <div class="grid">
-    <div class="card"><h3>Para la empresa</h3><p>Administración registra la razón social, el RUC y a cada trabajador. Desde ahí se copia el enlace personal, se revisan talleres y se descarga el Excel de apoyo.</p><a class="btn btn-sm btn-aula" href="/admin">Ir a administración</a></div>
+    <div class="card"><h3>Para la empresa</h3><p>Administración registra la razón social, el RUC y a cada trabajador. Desde ahí se copia el enlace personal, se revisan talleres y se descarga el Excel de apoyo para el reporte en el SUT.</p><a class="btn btn-sm btn-aula" href="/admin">Ir a administración</a></div>
     <div class="card"><h3>Para quien trabaja</h3><p>No hay contraseña. El ingreso es el enlace que entrega la empresa. Cuatro módulos y una prueba final. El certificado sale solo si las evaluaciones están aprobadas y se completan las 40 horas.</p></div>
     <div class="card"><h3>Qué incluye cada módulo</h3><ul><li>Lectura guiada · 3,5 h</li><li>Taller de caso · 3 h</li><li>Evaluación · 2 h, mínimo 70 %</li></ul><p class="small">La prueba final integradora acredita 6 h. En total, 40 h.</p></div>
-  </div></section>`;
+  </div>
+  <div class="card" style="margin-top:18px"><h3>Materiales y reporte</h3>
+  <p>El manual del curso y el kit de sensibilización acompañan cada lectura. El video magistral aparece cuando la organización configura su enlace.</p>
+  <p><a class="btn btn-sm btn-aula" href="/materiales/igualdad/Manual_Curso_40h_Igualdad_Salarial_Consultoria_Sanchez.pdf">Manual del curso (PDF)</a> <a class="btn btn-sm btn-sec" href="/materiales/igualdad/Kit_SUT_Sensibilizacion_Certificado_Consultoria_Sanchez.pdf">Kit SUT de sensibilización (PDF)</a></p>
+  <p class="small">En el SUT, las acciones de 2025 se reportan hasta el 30 de noviembre de 2026 (MDT-2025-185). Las acciones de 2026 se reportan en enero de 2027 (Art. 5 del MDT-2025-006). El Excel ordena la evidencia; la constancia oficial se descarga del SUT. La sensibilización del Art. 4 es una obligación distinta de las 40 horas.</p></div>
+  </section>`;
 }
 
 function mats(list) {
@@ -33,7 +38,7 @@ function render() {
   root.innerHTML = `<div class="layout"><aside class="side"><p class="sec">${esc(state.company.razon_social)}</p><h3 style="margin:4px 10px">${esc(state.worker.nombre)}</h3><p class="small" style="margin:0 10px">${fmt(state.hours.total)} / ${state.totalHoras} h</p><div class="bar" style="margin:8px 10px"><i style="width:${state.hours.avance}%"></i></div>${mods}<a data-mod="final" class="${current === 'final' ? 'on' : ''} ${state.final.unlocked ? '' : 'lock'}">${state.final.unlocked ? '📝' : '🔒'} Prueba final · 6 h</a><a data-mod="cert" class="${current === 'cert' ? 'on' : ''}">🏅 Certificado</a></aside><div class="main" id="main"></div></div>`;
   root.querySelectorAll('[data-mod]').forEach(a => a.onclick = () => { current = a.dataset.mod; tab = current === 'final' ? 'final' : 'lectura'; render(); });
   const main = document.getElementById('main');
-  main.innerHTML = `<p class="banner-test">Versión de prueba. Las horas (lectura 3,5 h, taller 3 h, evaluación 2 h, prueba final 6 h, total 40 h) son la carga acreditada. No hay espera ni tiempo mínimo entre actividades.</p>` + body();
+  main.innerHTML = body();
   bind(main);
 }
 
@@ -46,12 +51,21 @@ function body() {
   return `<h2 class="t">${esc(m.title)}</h2><div class="tabs">${tabs}</div>` + (tab === 'lectura' ? lecturaHtml(m) : tab === 'taller' ? tallerHtml(m) : evalHtml(m));
 }
 
+function readingBlocks(paragraphs) {
+  return (paragraphs || []).map(p => {
+    if (p.startsWith('## ')) return `<h3>${esc(p.slice(3))}</h3>`;
+    if (p.startsWith('>> ')) return `<p class="callout">${esc(p.slice(3))}</p>`;
+    return `<p>${esc(p)}</p>`;
+  }).join('');
+}
+
 function lecturaHtml(m) {
   const s = m.lectura;
   const sent = s.status === 'approved' || s.status === 'pending';
   return `<p><span class="pill">${esc(statusLabel(s.status))}</span> Carga acreditada: ${fmt(m.hours.lectura)} h.</p>
   ${s.comment ? `<p class="err">Comentario de revisión: ${esc(s.comment)}</p>` : ''}
-  <div class="reading">${s.paragraphs.map(p => `<p>${esc(p)}</p>`).join('')}</div>${mats(s.materials)}
+  ${mats(s.materials)}
+  <div class="reading">${readingBlocks(s.paragraphs)}</div>
   ${sent ? '<p class="small">Lectura completada. El taller de este módulo ya está disponible.</p>' : `<p><button class="btn btn-aula" id="sendLec">Lectura completada / Enviar lectura</button></p>`}`;
 }
 
