@@ -11,7 +11,7 @@ function firmaHtml(texto){
   }).join('');
 }
 function diploma(inner){
-  return `<article class="diploma"><div class="diploma-band"><span>Consultoría Sánchez</span></div><div class="diploma-body">${inner}<p class="diploma-issued">Emitido por Consultoría Sánchez</p><p class="diploma-law">Referencia normativa: Acuerdo Ministerial MDT-2025-006.</p></div></article><p class="banner-test">Versión de prueba. Esta consulta confirma el certificado en la plataforma. No reemplaza el reporte oficial ante el Ministerio del Trabajo.</p>`;
+  return `<article class="diploma"><div class="diploma-band"><span>Consultoría Sánchez</span></div><div class="diploma-body">${inner}<p class="diploma-issued">Emitido por Consultoría Sánchez</p><p class="diploma-law">Referencia normativa: Acuerdo Ministerial MDT-2025-006.</p></div></article><p class="small">Esta consulta confirma el certificado emitido por Consultoría Sánchez. No reemplaza el reporte que el empleador presenta en el SUT del Ministerio del Trabajo.</p>`;
 }
 (async()=>{
  if(!code){root.innerHTML=diploma('<img src="/img/logo.png" alt=""><p class="diploma-firm">Consultoría Sánchez</p><h1 class="diploma-name">Verificar certificado</h1><p class="diploma-text">Indique el código en la dirección, por ejemplo /verificar/CSLM-XXXXXXXX.</p>');return}
